@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#FF6700">
+  <title>Xiaomi Service Center - QC Physical Check &amp; Approval System</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- NAVBAR HEADER -->
+  <header class="navbar" id="appHeader" style="display: none;">
+    <div class="nav-container">
+      <div class="nav-brand">
+        <span class="brand-badge">mi</span>
+        <div class="brand-text">
+          <h1>XIAOMI SERVICE CENTER</h1>
+          <p>Technical Service Approval &amp; QC Physical Check</p>
+        </div>
+      </div>
+
+      <div class="nav-user">
+        <span class="badge mode-indicator" style="font-size: 11px;">Mode</span>
+        <button class="btn btn-secondary btn-sm" id="btnOpenSettings" title="Pengaturan Endpoint API">⚙️ Endpoint</button>
+        <div class="user-badge">
+          <span id="navUserName">Nama Pengguna</span>
+          <span class="role-tag" id="navUserRole">Role</span>
+        </div>
+        <button class="btn-logout" id="btnLogout">Keluar</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="container">
+
+    <!-- ====================================================================
+         VIEW 1: LOGIN SCREEN
+         ==================================================================== -->
+    <section id="loginView" class="login-wrap">
+      <div class="login-card">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <span class="brand-badge" style="font-size: 24px; padding: 6px 14px; display: inline-block; margin-bottom: 12px;">mi</span>
+          <h2 style="font-size: 20px; font-weight: 800; color: var(--dark);">Sistem Servis &amp; Approval</h2>
+          <p style="font-size: 13px; color: var(--text-muted);">Pusat Servis Resmi Xiaomi / Unicom</p>
+          <div style="margin-top: 8px;">
+            <span class="badge mode-indicator" style="font-size: 11px;">Mode</span>
+          </div>
+        </div>
+
+        <form id="loginForm">
+          <div class="form-group">
+            <label>Nama Pengguna (Username)</label>
+            <input type="text" id="loginUsername" class="form-control" placeholder="Contoh: budi.teknisi atau agus.ts" required autocomplete="username">
+          </div>
+
+          <div class="form-group">
+            <label>Kata Sandi (Password)</label>
+            <input type="password" id="loginPassword" class="form-control" placeholder="Masukkan password..." required autocomplete="current-password">
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" style="margin-top: 10px;">Masuk ke Aplikasi</button>
+        </form>
+
+        <div class="quick-login-hints">
+          <p style="font-weight: bold; margin-bottom: 6px; color: var(--primary);">⚡ Demo Akses Cepat (Satu Klik):</p>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button type="button" class="btn btn-sm btn-secondary" id="quickLoginTeknisi">Login Teknisi A (Budi)</button>
+            <button type="button" class="btn btn-sm btn-secondary" id="quickLoginTeknisiB">Login Teknisi B / QC (Siti)</button>
+            <button type="button" class="btn btn-sm btn-secondary" id="quickLoginTs">Login Tim TS (Agus)</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TOP-LEVEL MODULE SWITCHER (QC PHYSICAL CHECK VS TECHNICAL APPROVAL) -->
+    <div class="module-nav" id="moduleNav" style="display: none;">
+      <button type="button" class="module-btn active" id="btnModuleQC" onclick="App.switchMainModule('qc')">
+        📋 Form QC Physical Check (SOP Xiaomi Inbound &amp; Outbound)
+      </button>
+      <button type="button" class="module-btn tech-btn" id="btnModuleTech" onclick="App.switchMainModule('tech')">
+        ⚡ Technical Approval (5 Jenis Approval Part/Problem)
+      </button>
+    </div>
+
+    <!-- ====================================================================
+         MODUL 1: FORM QC PHYSICAL CHECK (SESUAI SOP UNICOM XIAOMI 21 AGUSTUS 2026)
+         ==================================================================== -->
+    <section id="qcModuleView" style="display: none;">
+      <div class="tab-group">
+        <button class="tab-btn active" data-qctab="panelInboundQC">📥 Tahap 1: Inbound Physical Check (Teknisi A - Repair)</button>
+        <button class="tab-btn" data-qctab="panelOutboundQC">🔍 Tahap 2: Outbound QC Check (Teknisi B - QC)</button>
+        <button class="tab-btn" data-qctab="panelHistoryQC">📄 Arsip &amp; Unduh PDF QC (Syarat RRR)</button>
+      </div>
+
+      <!-- SUB-PANEL 1: INBOUND PHYSICAL CHECK (TEKNISI A) -->
+      <div id="panelInboundQC" class="tab-panel">
+        <div class="card" style="border-top: 4px solid #C53030;">
+          <div class="card-header">
+            <div>
+              <span class="badge badge-unicom">SOP Unicom / Xiaomi</span>
+              <h2 class="card-title" style="margin-top: 6px;">Tahap 1: Inbound Physical Check (Pengecekan Fisik Awal)</h2>
+              <p class="hint-text">Dilakukan oleh Teknisi A sebelum perbaikan/pembongkaran unit. Tandai lokasi cacat awal pada sketsa.</p>
+            </div>
+          </div>
+
+          <!-- Data Unit Sesuai SOP -->
+          <div class="form-grid">
+            <div class="form-group">
+              <label>ASID (Nomor Identitas Servis) <span class="required">*</span></label>
+              <input type="text" id="qcAsid" class="form-control" placeholder="Contoh: ASID230726000002" required>
+            </div>
+            <div class="form-group">
+              <label>Model Perangkat <span class="required">*</span></label>
+              <input type="text" id="qcModel" class="form-control" placeholder="Contoh: Xiaomi 17" required>
+            </div>
+            <div class="form-group">
+              <label>IMEI / SN <span class="required">*</span></label>
+              <input type="text" id="qcImeiSn" class="form-control" placeholder="Contoh: 3332125612323" required>
+            </div>
+            <div class="form-group">
+              <label>Nama Customer / End User <span class="required">*</span></label>
+              <input type="text" id="qcNamaCustomer" class="form-control" placeholder="Contoh: Bapak Hendra" required>
+            </div>
+            <div class="form-group">
+              <label>Teknisi A (Engineers Repair)</label>
+              <input type="text" id="qcTeknisiA" class="form-control" readonly style="background: #F8FAFC;">
+            </div>
+          </div>
+
+          <!-- Inbound Physical Sketch Canvas -->
+          <div class="card" style="margin-top: 10px; background: #FFFDFD; border-color: #FED7D7;">
+            <h3 class="card-title" style="font-size: 14px; color: #C53030;">
+              ✏️ Sketsa Pemeriksaan Fisik Inbound (Tandai Panah ke Arah Cacat Awal)
+            </h3>
+            <p class="hint-text" style="margin-bottom: 8px;">
+              Sesuai SOP: <em>"Gunakan panah pada sketsa perangkat di form yang menunjuk ke lokasi cacat (Gompal, Layar ada scratch, Sedikit scratch)."</em>
+            </p>
+
+            <div class="sketch-container">
+              <div class="sketch-toolbar">
+                <button type="button" class="tool-btn active" data-tool="arrow" onclick="SketchCanvas.setTool('arrow')">➡️ Panah Penunjuk</button>
+                <button type="button" class="tool-btn" data-tool="text" onclick="SketchCanvas.setTool('text')">💬 Tulis Keterangan</button>
+                <button type="button" class="tool-btn" onclick="SketchCanvas.addQuickText('Gompal')">+ 'Gompal'</button>
+                <button type="button" class="tool-btn" onclick="SketchCanvas.addQuickText('Layar ada scratch')">+ 'Layar ada scratch'</button>
+                <button type="button" class="tool-btn" onclick="SketchCanvas.addQuickText('Sedikit scratch')">+ 'Sedikit scratch'</button>
+                <button type="button" class="tool-btn" data-tool="dent" onclick="SketchCanvas.setTool('dent')">🟡 Dent</button>
+                <button type="button" class="tool-btn" data-tool="pen" onclick="SketchCanvas.setTool('pen')">✏️ Coretan</button>
+                <button type="button" class="tool-btn" onclick="SketchCanvas.undo()">↩️ Undo</button>
+                <button type="button" class="tool-btn" onclick="SketchCanvas.clear()">🗑️ Reset</button>
+              </div>
+              <canvas id="sketchCanvas" width="500" height="300"></canvas>
+            </div>
+          </div>
+
+          <!-- Catatan Cacat Awal Tambahan -->
+          <div class="form-group">
+            <label>Ringkasan Keterangan Cacat Awal Fisik Unit:</label>
+            <textarea id="qcCatatanAwal" class="form-control" placeholder="Contoh: Gompal di sudut kiri atas, Layar ada scratch tipis..."></textarea>
+          </div>
+
+          <!-- Dual Signature: Teknisi A & End User (Customer) -->
+          <div class="form-group">
+            <label style="font-weight: bold; color: #C53030;">
+              ✍️ Tanda Tangan Pengesahan Tahap 1 (Inbound Physical Check):
+            </label>
+            <p class="hint-text">Sesuai SOP, kondisi fisik awal unit wajib disetujui bersama oleh Teknisi A dan Konsumen (End User).</p>
+
+            <div class="signature-grid">
+              <!-- Kotak TTD 1: Teknisi A -->
+              <div class="signature-pad-box">
+                <div style="font-weight: bold; font-size: 12px; margin-bottom: 4px; color: #2D3748;">
+                  1. Engineers Repair (Teknisi A) <span class="required">*</span>
+                </div>
+                <canvas id="signCanvasA" class="signature-canvas" width="380" height="120"></canvas>
+                <div class="sign-tools">
+                  <span class="hint-text">TTD Teknisi Repair</span>
+                  <button type="button" class="btn btn-sm btn-secondary" onclick="App.clearSignA()">Hapus</button>
+                </div>
+              </div>
+
+              <!-- Kotak TTD 2: End User / Customer -->
+              <div class="signature-pad-box" style="border-color: #CBD5E0;">
+                <div style="font-weight: bold; font-size: 12px; margin-bottom: 4px; color: #2D3748;">
+                  2. End User / Customer <span class="required">*</span>
+                </div>
+                <canvas id="signCanvasCustomer" class="signature-canvas" width="380" height="120"></canvas>
+                <div class="sign-tools">
+                  <span class="hint-text">TTD Konsumen Pemilik Unit</span>
+                  <button type="button" class="btn btn-sm btn-secondary" onclick="App.clearSignCustomer()">Hapus</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <div style="text-align: right; margin-top: 16px;">
+            <button type="button" class="btn btn-primary" style="background:#C53030;" onclick="App.submitInboundQC()">
+              💾 Simpan Inbound QC (Lanjut ke Tahap Perbaikan)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-PANEL 2: OUTBOUND QC CHECK (TEKNISI B) -->
+      <div id="panelOutboundQC" class="tab-panel" style="display: none;">
+        <div class="card" style="border-top: 4px solid #059669;">
+          <div class="card-header">
+            <div>
+              <span class="badge badge-unicom">SOP Verifikasi Silang (Cross-Verification)</span>
+              <h2 class="card-title" style="margin-top: 6px;">Antrean Unit Selesai Servis Menunggu Outbound QC</h2>
+              <p class="hint-text">
+                ⚠️ <strong>Ketentuan SOP:</strong> Teknisi B (Engineers QC) <strong>harus berbeda</strong> dari Teknisi A (Engineers Repair) untuk memastikan objektivitas kontrol kualitas.
+              </p>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="App.loadPendingOutboundQC()">🔄 Refresh</button>
+          </div>
+
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>QC ID</th>
+                  <th>Waktu Inbound</th>
+                  <th>ASID</th>
+                  <th>Model Perangkat</th>
+                  <th>IMEI / SN</th>
+                  <th>Teknisi A (Repair)</th>
+                  <th>Aksi Verifikasi</th>
+                </tr>
+              </thead>
+              <tbody id="outboundPendingTableBody">
+                <!-- Diisi via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-PANEL 3: ARSIP & UNDUH PDF QC -->
+      <div id="panelHistoryQC" class="tab-panel" style="display: none;">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Arsip Form Physical Check (Syarat Wajib Approve RRR)</h2>
+              <p class="hint-text">Dokumen fisik sah yang telah lolos QC dan ditandatangani oleh kedua teknisi.</p>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="App.loadAllQCLogs()">🔄 Refresh</button>
+          </div>
+
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>QC ID</th>
+                  <th>ASID</th>
+                  <th>Model &amp; IMEI</th>
+                  <th>Teknisi A (Repair)</th>
+                  <th>Teknisi B (QC)</th>
+                  <th>Tanggal QC</th>
+                  <th>Status</th>
+                  <th>Formulir Resmi PDF</th>
+                </tr>
+              </thead>
+              <tbody id="historyQcTableBody">
+                <!-- Diisi via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         MODUL 2: TECHNICAL APPROVAL (5 JENIS APPROVAL PART/PROBLEM)
+         ==================================================================== -->
+    <section id="techModuleView" style="display: none;">
+      <!-- VIEW PORTAL TEKNISI -->
+      <div id="teknisiView" style="display: none;">
+        <div class="tab-group">
+          <button class="tab-btn active" data-tab="panelFormBaru">📝 Buat Pengajuan Technical Approval</button>
+          <button class="tab-btn" data-tab="panelRiwayatTeknisi">📋 Riwayat Pengajuan Saya</button>
+        </div>
+
+        <!-- Panel 1: Buat Pengajuan Baru Technical -->
+        <div id="panelFormBaru" class="tab-panel">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Formulir Pengajuan Technical Approval (Klaim Part &amp; Eskalasi)</h2>
+            </div>
+
+            <!-- Metadata Perangkat -->
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Nomor Service Request (SR Xiaomi) <span class="required">*</span></label>
+                <input type="text" id="formSrNumber" class="form-control" placeholder="Contoh: SR-XMI-202609-088" required>
+              </div>
+              <div class="form-group">
+                <label>Nomor IMEI Unit (15 Digit) <span class="required">*</span></label>
+                <input type="text" id="formImei" class="form-control" placeholder="Contoh: 867492051234567" maxlength="16" required>
+              </div>
+              <div class="form-group">
+                <label>Tipe Model Perangkat Xiaomi <span class="required">*</span></label>
+                <input type="text" id="formModel" class="form-control" placeholder="Contoh: Redmi Note 13 Pro 5G" required>
+              </div>
+              <div class="form-group">
+                <label>Teknisi Pemohon</label>
+                <input type="text" id="formTeknisiName" class="form-control" readonly style="background: #F8FAFC;">
+              </div>
+            </div>
+
+            <!-- Pilihan 5 Jenis Approval -->
+            <div class="form-group">
+              <label>Jenis Form Approval <span class="required">*</span></label>
+              <select id="formJenisApproval" class="form-control" style="font-weight: 700; color: var(--primary);">
+                <option value="DOA Part">1. DOA Part (Sparepart Baru Cacat / Rusak)</option>
+                <option value="DOA Part Mainboard">2. DOA Part Mainboard (Tukar Motherboard &amp; IMEI)</option>
+                <option value="PPI">3. PPI (Product Problem Inspection / Tukar Unit)</option>
+                <option value="Case/Problem">4. Case/Problem (Eskalasi Kasus Abnormal / Overheat)</option>
+                <option value="Case Battery Kembung">5. Case Battery Kembung (Hazmat Safe Handling)</option>
+              </select>
+            </div>
+
+            <!-- Form Dinamis -->
+            <div id="dynamicTemplateContainer"></div>
+
+            <!-- Lampiran Foto Bukti -->
+            <div class="card" style="margin-top: 16px;">
+              <h3 class="card-title" style="font-size: 15px;">📷 Lampiran Foto Bukti Part / Unit Rusak</h3>
+              <div class="form-group" style="margin-top: 8px;">
+                <input type="file" id="evidenceImageInput" class="form-control" accept="image/*" multiple>
+                <p class="hint-text">Bisa memilih foto bukti makro / barcode part.</p>
+              </div>
+              <div id="evidencePreviewContainer" class="image-preview-grid"></div>
+            </div>
+
+            <!-- Tombol Kirim -->
+            <div style="margin-top: 24px; text-align: right;">
+              <button type="button" class="btn btn-secondary" onclick="App.resetTeknisiForm()" style="margin-right: 8px;">Reset Form</button>
+              <button type="button" class="btn btn-primary" onclick="App.submitNewRequest()">🚀 Kirim Pengajuan ke Tim TS</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel 2: Riwayat Pengajuan Teknisi -->
+        <div id="panelRiwayatTeknisi" class="tab-panel" style="display: none;">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Daftar Pengajuan Technical Approval Saya</h2>
+              <button class="btn btn-secondary btn-sm" onclick="App.loadTeknisiHistory()">🔄 Refresh</button>
+            </div>
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>No. Request</th>
+                    <th>Nomor SR</th>
+                    <th>Perangkat &amp; IMEI</th>
+                    <th>Jenis Approval</th>
+                    <th>Status</th>
+                    <th>Dokumen PDF</th>
+                  </tr>
+                </thead>
+                <tbody id="teknisiHistoryTableBody">
+                  <!-- Diisi via JavaScript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW PORTAL TIM TS (APPROVAL ADMIN) -->
+      <div id="tsView" style="display: none;">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Antrean Pengajuan Technical Approval Pending</h2>
+              <p class="hint-text">Tinjau analisa teknisi dan berikan otorisasi persetujuan klaim part.</p>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <span class="badge badge-pending" id="pendingCountBadge">0 Request</span>
+              <button class="btn btn-secondary btn-sm" onclick="App.loadPendingApprovals()">🔄 Refresh</button>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>No. Request</th>
+                  <th>Nomor SR</th>
+                  <th>Perangkat &amp; IMEI</th>
+                  <th>Jenis Approval</th>
+                  <th>Teknisi</th>
+                  <th>Status</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="tsPendingTableBody">
+                <!-- Diisi via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ====================================================================
+       MODAL 1: OUTBOUND QC PHYSICAL CHECK PROCESS (TEKNISI B)
+       ==================================================================== -->
+  <div class="modal-backdrop" id="outboundQcModal">
+    <div class="modal-content" style="max-width: 750px;">
+      <div class="modal-header">
+        <div>
+          <span class="badge badge-unicom">Tahap 2: Outbound QC Sesuai SOP</span>
+          <h3 style="font-size: 16px; font-weight: 700; margin-top: 4px;">
+            Verifikasi Fisik Akhir: <span id="outboundModalQcId" style="color: #C53030;">QC-000</span>
+          </h3>
+        </div>
+        <button class="modal-close" onclick="App.closeOutboundModal()">&times;</button>
+      </div>
+
+      <!-- Data Identitas Unit -->
+      <table style="margin-bottom: 12px;">
+        <tr>
+          <td style="width: 25%; background: #F8FAFC; font-weight: bold;">ASID</td>
+          <td id="outboundModalAsid" style="font-weight: bold;">-</td>
+          <td style="width: 25%; background: #F8FAFC; font-weight: bold;">Model Unit</td>
+          <td id="outboundModalModel">-</td>
+        </tr>
+        <tr>
+          <td style="background: #F8FAFC; font-weight: bold;">IMEI / SN</td>
+          <td id="outboundModalImei">-</td>
+          <td style="background: #F8FAFC; font-weight: bold;">Customer</td>
+          <td id="outboundModalCustomer" style="font-weight: bold;">-</td>
+        </tr>
+        <tr>
+          <td style="background: #F8FAFC; font-weight: bold;">Teknisi Repair (A)</td>
+          <td id="outboundModalTekA" style="font-weight: bold; color: #C53030;" colspan="3">-</td>
+        </tr>
+      </table>
+
+      <!-- Preview Sketsa Inbound dari Teknisi A -->
+      <div style="background: #F8FAFC; border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-bottom: 16px;">
+        <h4 style="font-size: 12px; font-weight: bold; color: #2D3748; margin-bottom: 6px;">
+          🔍 Sketsa Cacat Awal Inbound (Oleh Teknisi A):
+        </h4>
+        <div id="outboundModalSketchImg" style="text-align: center; max-height: 200px; overflow: hidden;"></div>
+        <p id="outboundModalCatatanAwal" style="font-size: 11px; color: #555; margin-top: 6px; font-style: italic;"></p>
+      </div>
+
+      <!-- 4 Poin Checklist Standar SOP Xiaomi -->
+      <div class="sop-checklist-card">
+        <h4 style="font-size: 13px; font-weight: bold; color: #9B2C2C; margin-bottom: 10px;">
+          Pengecekan Fisik (Checklist Wajib Centang):
+        </h4>
+
+        <label class="sop-checklist-item">
+          <input type="checkbox" id="chkBackCover" required>
+          <span>1. Back cover lem rapat (tidak ada celah/renggang)</span>
+        </label>
+
+        <label class="sop-checklist-item">
+          <input type="checkbox" id="chkKameraBelakang" required>
+          <span>2. Kamera belakang bersih (bebas noda sidik jari atau debu)</span>
+        </label>
+
+        <label class="sop-checklist-item">
+          <input type="checkbox" id="chkKameraDepan" required>
+          <span>3. Kamera depan bersih</span>
+        </label>
+
+        <label class="sop-checklist-item">
+          <input type="checkbox" id="chkFisikHp" required>
+          <span>4. Fisik handphone bersih secara keseluruhan (bebas sisa lem atau kotoran)</span>
+        </label>
+      </div>
+
+      <!-- Date QC -->
+      <div class="form-group">
+        <label>Date QC (Tanggal Selesai QC):</label>
+        <input type="date" id="outboundDateQc" class="form-control" style="max-width: 200px;">
+      </div>
+
+      <!-- Tanda Tangan Digital Teknisi B -->
+      <div class="form-group">
+        <label>Tanda Tangan Pengesahan (Engineers QC - Teknisi B) <span class="required">*</span>:</label>
+        <div class="signature-pad-box">
+          <canvas id="signCanvasB" class="signature-canvas" width="380" height="120"></canvas>
+          <div class="sign-tools">
+            <span class="hint-text">Goreskan tanda tangan Teknisi B di atas</span>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="App.clearSignB()">Hapus TTD</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tombol Aksi -->
+      <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px;">
+        <button type="button" class="btn btn-secondary" onclick="App.closeOutboundModal()">Batal</button>
+        <button type="button" class="btn btn-success" onclick="App.submitOutboundQC()">
+          ✅ Selesaikan QC &amp; Generate Form Resmi (Syarat RRR)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL 2: TINJAU & KEPUTUSAN TECHNICAL APPROVAL (TIM TS)
+       ==================================================================== -->
+  <div class="modal-backdrop" id="approvalModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="font-size: 16px; font-weight: 700; color: var(--dark);">
+          Tinjau Form Technical: <span id="modalReqId" style="color: var(--primary);">REQ-000</span>
+        </h3>
+        <button class="modal-close" onclick="App.closeReviewModal()">&times;</button>
+      </div>
+
+      <!-- Detail Perangkat -->
+      <table style="margin-bottom: 16px;">
+        <tr>
+          <td style="width: 30%; background: #F8FAFC; font-weight: bold;">Nomor SR</td>
+          <td id="modalSrNumber">-</td>
+        </tr>
+        <tr>
+          <td style="background: #F8FAFC; font-weight: bold;">IMEI</td>
+          <td id="modalImei">-</td>
+        </tr>
+        <tr>
+          <td style="background: #F8FAFC; font-weight: bold;">Model Unit</td>
+          <td id="modalModel">-</td>
+        </tr>
+        <tr>
+          <td style="background: #F8FAFC; font-weight: bold;">Jenis Approval</td>
+          <td id="modalJenis" style="font-weight: bold; color: var(--primary);">-</td>
+        </tr>
+        <tr>
+          <td style="background: #F8FAFC; font-weight: bold;">Teknisi Pemohon</td>
+          <td id="modalTeknisi">-</td>
+        </tr>
+      </table>
+
+      <!-- Analisa Spesifik -->
+      <h4 style="font-size: 13px; font-weight: bold; margin-bottom: 6px;">Detail Analisa Teknis:</h4>
+      <pre id="modalAnalisaContent" style="background: #F8FAFC; border: 1px solid var(--border); padding: 10px; border-radius: 6px; font-size: 11px; max-height: 180px; overflow-y: auto; white-space: pre-wrap; margin-bottom: 14px;"></pre>
+
+      <!-- Lampiran Foto Bukti -->
+      <div id="modalEvidencePreview" style="margin-bottom: 16px;"></div>
+
+      <!-- Input Catatan Tim TS -->
+      <div class="form-group">
+        <label>Catatan Teknis / Alasan Keputusan Tim TS:</label>
+        <textarea id="modalApproverNotes" class="form-control" placeholder="Contoh: Analisa valid. Disetujui untuk penggantian sparepart..."></textarea>
+      </div>
+
+      <!-- Tombol Aksi Approval -->
+      <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+        <button type="button" class="btn btn-secondary" onclick="App.closeReviewModal()">Batal</button>
+        <button type="button" class="btn btn-danger" onclick="App.executeApprovalDecision('Rejected')">❌ Tolak (Reject)</button>
+        <button type="button" class="btn btn-success" onclick="App.executeApprovalDecision('Approved')">✅ Setujui (Approve)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL 3: PENGATURAN ENDPOINT APPS SCRIPT
+       ==================================================================== -->
+  <div class="modal-backdrop" id="settingsModal">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3 style="font-size: 16px; font-weight: 700;">Konfigurasi Backend Google Apps Script</h3>
+        <button class="modal-close" id="btnCloseSettings">&times;</button>
+      </div>
+
+      <div class="form-group">
+        <label>URL Web App Google Apps Script:</label>
+        <input type="url" id="inputAppsScriptUrl" class="form-control" placeholder="https://script.google.com/macros/s/AKfy.../exec">
+        <p class="hint-text">
+          *Biarkan kosong untuk tetap menjalankan aplikasi dalam <strong>Mode Demo / Simulasi Cepat</strong> langsung di browser.
+        </p>
+      </div>
+
+      <div style="text-align: right; margin-top: 20px;">
+        <button class="btn btn-primary" id="btnSaveSettings">Simpan Pengaturan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTAINER TOAST NOTIFICATION -->
+  <div id="toastContainer"></div>
+
+  <!-- SCRIPTS -->
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/signature-pad.js"></script>
+  <script src="js/canvas-sketch.js"></script>
+  <script src="js/templates.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    // Registrasi Service Worker PWA
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").then((reg) => {
+          console.log("Service Worker terdaftar sukses:", reg.scope);
+        }).catch((err) => {
+          console.log("Service Worker gagal didaftarkan:", err);
+        });
+      });
+    }
+  </script>
+</body>
+</html>

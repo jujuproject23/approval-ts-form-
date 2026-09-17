@@ -1,0 +1,16 @@
+{
+  "name": "Xiaomi Service Approval & IQC",
+  "short_name": "Mi Approval",
+  "description": "Aplikasi Form Fisik & Approval Servis Xiaomi Service Center",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#F4F5F7",
+  "theme_color": "#FF6700",
+  "icons": [
+    {
+      "src": "https://upload.wikimedia.org/wikipedia/commons/2/29/Xiaomi_logo.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
