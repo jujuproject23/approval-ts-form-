@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#2563EB">
-  <title>Xiaomi Service Center - Enterprise Approval &amp; QC System</title>
+  <title>QC Tower Approval &amp; UNI Pysical QC System</title>
   <link rel="icon" type="image/png" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="manifest" href="manifest.json">
@@ -20,7 +20,7 @@
       <div style="text-align: center; margin-bottom: 24px;">
         <div class="brand-logo-badge" style="margin: 0 auto 12px; width: 44px; height: 44px; font-size: 20px;">mi</div>
         <h2 style="font-size: 20px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em;">Sistem Approval &amp; QC</h2>
-        <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Pusat Servis Resmi Xiaomi / Unicom</p>
+        <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Tower Approval</p>
         <div style="margin-top: 8px;">
           <span class="badge mode-indicator" style="font-size: 11px;">Mode</span>
         </div>
@@ -48,7 +48,7 @@
         <button type="submit" class="btn btn-primary btn-block">Masuk ke Sistem</button>
       </form>
 
-      <div class="quick-login-hints">
+      <!-- <div class="quick-login-hints">
         <p style="font-weight: 700; margin-bottom: 8px; color: var(--primary);">⚡ Demo Akses Cepat (6 Role Enterprise):</p>
         <div style="display: flex; gap: 6px; flex-wrap: wrap;">
           <button type="button" class="btn btn-sm btn-secondary" id="quickLoginAdmin">👑 Admin</button>
@@ -57,7 +57,7 @@
           <button type="button" class="btn btn-sm btn-secondary" id="quickLoginTeknisi">🔧 Teknisi A</button>
           <button type="button" class="btn btn-sm btn-secondary" id="quickLoginTeknisiB">🔍 Teknisi B</button>
           <button type="button" class="btn btn-sm btn-secondary" id="quickLoginTs">⚡ Tim TS</button>
-        </div>
+        </div> -->
       </div>
     </div>
   </section>
@@ -70,10 +70,10 @@
     <!-- 1. SIDEBAR NAVIGATION -->
     <aside class="app-sidebar" id="appSidebar">
       <div class="sidebar-brand">
-        <div class="brand-logo-badge">mi</div>
+        <div class="brand-logo-badge">MI</div>
         <div class="brand-details">
-          <span class="brand-name">XIAOMI SERVICE</span>
-          <span class="brand-subtext">Enterprise Portal</span>
+          <span class="brand-name">Pysical QC XM</span>
+          <span class="brand-subtext">Tower Approval</span>
         </div>
       </div>
 
@@ -81,32 +81,27 @@
         <div class="nav-section-title">Menu Utama</div>
 
         <a href="#" class="nav-item active" data-nav-view="dashboard">
-          <span class="nav-icon">📊</span>
           <span class="nav-label">Dashboard</span>
         </a>
 
         <a href="#" class="nav-item" data-nav-view="qc-module">
-          <span class="nav-icon">📋</span>
-          <span class="nav-label">SOP QC Physical</span>
+          <span class="nav-label">Form QC Physical</span>
           <span class="nav-badge" style="background: #C53030;">SOP</span>
         </a>
 
         <a href="#" class="nav-item" data-nav-view="tech-approval">
-          <span class="nav-icon">⚡</span>
-          <span class="nav-label">Technical Approval</span>
+          <span class="nav-label">Form Approval</span>
         </a>
 
         <a href="#" class="nav-item" data-nav-view="all-requests">
-          <span class="nav-icon">🗂️</span>
           <span class="nav-label">Daftar Pengajuan</span>
         </a>
 
-        <div class="nav-section-title nav-management-only">Manajemen &amp; Laporan</div>
+       <!-- <div class="nav-section-title nav-management-only">Manajemen &amp; Laporan</div>
 
         <a href="#" class="nav-item nav-management-only" data-nav-view="reports">
-          <span class="nav-icon">📈</span>
           <span class="nav-label">Laporan &amp; Analitik</span>
-        </a>
+        </a> -->
 
         <a href="#" class="nav-item nav-admin-only" data-nav-view="admin">
           <span class="nav-icon">🛡️</span>
@@ -117,14 +112,13 @@
         <div class="nav-section-title">Akun &amp; Konfigurasi</div>
 
         <a href="#" class="nav-item" data-nav-view="profile">
-          <span class="nav-icon">👤</span>
-          <span class="nav-label">Profil Saya</span>
+          <span class="nav-label">Profil</span>
         </a>
       </nav>
 
       <div class="sidebar-footer">
         <button class="sidebar-collapse-btn" id="btnSidebarCollapse" title="Sembunyikan / Tampilkan Sidebar">
-          ⬅️
+          Back
         </button>
       </div>
     </aside>
@@ -142,8 +136,7 @@
 
           <!-- Global Search Trigger (Ctrl+K) -->
           <div class="global-search-trigger" id="btnGlobalSearch">
-            <span>🔍</span>
-            <span>Cari pengajuan, ASID, IMEI...</span>
+            <span>Search, ASID, IMEI...</span>
             <span class="kbd-shortcut">Ctrl K</span>
           </div>
         </div>
@@ -152,10 +145,10 @@
           <!-- Backend Mode Badge -->
           <span class="badge mode-indicator mode-tag">Mode</span>
 
-          <!-- Settings Button -->
+          <!-- Settings Button 
           <button class="header-action-btn" id="btnOpenSettings" title="Pengaturan Endpoint Apps Script">
             ⚙️
-          </button>
+          </button> -->
 
           <!-- Theme Toggle -->
           <button class="header-action-btn theme-toggle-btn" id="btnThemeToggle" title="Ganti Tema">
@@ -184,7 +177,7 @@
                 <div style="font-weight: 700; font-size: 13px;" id="dropdownUserName">Pengguna</div>
                 <div style="font-size: 11px; color: var(--text-muted);" id="dropdownUserRole">Role</div>
               </div>
-              <a href="#" class="dropdown-item" onclick="SidebarComponent.navigate('profile')">👤 Profil &amp; Keamanan</a>
+              <a href="#" class="dropdown-item" onclick="SidebarComponent.navigate('profile')"> Profil &amp; Keamanan</a>
               <a href="#" class="dropdown-item" id="btnDropdownSettings">⚙️ Pengaturan Endpoint</a>
               <div class="dropdown-divider"></div>
               <a href="#" class="dropdown-item danger" id="btnLogout">🚪 Keluar (Logout)</a>
@@ -196,7 +189,7 @@
       <!-- NOTIFICATION DRAWER -->
       <div class="notification-drawer" id="notificationDrawer">
         <div class="drawer-header">
-          <div style="font-weight: 700; font-size: 15px;">🔔 Pusat Notifikasi</div>
+          <div style="font-weight: 700; font-size: 15px;">🔔 Notifikasi</div>
           <div style="display: flex; gap: 8px; align-items: center;">
             <button class="btn btn-sm btn-ghost" id="btnMarkAllNotifsRead" style="font-size: 11px;">Tandai Dibaca</button>
             <button class="modal-close" id="btnCloseNotificationDrawer">&times;</button>
@@ -211,10 +204,10 @@
       <section id="view-dashboard" class="view-section view-container">
         <div class="view-header">
           <div>
-            <h1>Dashboard Operasional &amp; Approval</h1>
-            <p>Ringkasan metrik KPI, tren bulanan, dan antrean tugas aktif.</p>
+            <h1>Dashboard  &amp; Approval</h1>
+            <p>Ringkasan Jumlah Lalulintas Approval.</p>
           </div>
-          <button class="btn btn-secondary btn-sm" onclick="DashboardView.render()">🔄 Refresh Data</button>
+          <button class="btn btn-secondary btn-sm" onclick="DashboardView.render()">🔄 Perbarui Data</button>
         </div>
 
         <div class="kpi-grid" id="dashboardKpiContainer"></div>
@@ -223,7 +216,7 @@
           <!-- Monthly Trend Chart -->
           <div class="card">
             <div class="card-header">
-              <h3 class="card-title">📈 Tren Volume Pengajuan Bulanan</h3>
+              <h3 class="card-title" Volume Pengajuan Bulanan</h3>
             </div>
             <div id="dashboardTrendChart" style="padding: 10px 0;"></div>
           </div>
@@ -231,7 +224,7 @@
           <!-- Approval Progress Funnel -->
           <div class="card">
             <div class="card-header">
-              <h3 class="card-title">🎯 Distribusi Status Persetujuan</h3>
+              <h3 class="card-title">Status Persetujuan</h3>
             </div>
             <div id="dashboardProgressFunnel" style="padding: 10px 0;"></div>
           </div>
@@ -241,7 +234,7 @@
           <!-- Pending Tasks for Current User -->
           <div class="card">
             <div class="card-header">
-              <h3 class="card-title">⏳ Antrean Tugas Tertunda</h3>
+              <h3 class="card-title"> Antrean Approval</h3>
             </div>
             <div class="table-responsive">
               <table class="enterprise-table">
@@ -259,7 +252,7 @@
             </div>
           </div>
 
-          <!-- Recent Activities Feed (Audit Trail) -->
+          <!-- Recent Activities Feed (Audit Trail) 
           <div class="card">
             <div class="card-header">
               <h3 class="card-title">🕒 Aktivitas Sistem Terkini (Audit Trail)</h3>
@@ -267,21 +260,21 @@
             <div id="dashboardActivityList"></div>
           </div>
         </div>
-      </section>
+      </section> -->
 
       <!-- VIEW 2: SOP QC PHYSICAL CHECK -->
       <section id="view-qc-module" class="view-section view-container" style="display: none;">
         <div class="view-header">
           <div>
-            <h1>Form QC Physical Check (SOP Unicom Xiaomi)</h1>
-            <p>Pemeriksaan fisik Inbound &amp; Outbound unit servis sebagai syarat sah klaim dan Approve RRR.</p>
+            <h1>Form QC Physical Check</h1>
+            <p>IQC &amp; OQC Pemeriksaan fisik unit servis sebagai prosedur klaim dan Approve RRR..</p>
           </div>
         </div>
 
         <div class="tab-group">
-          <button class="tab-btn active" data-qctab="panelInboundQC">📥 Tahap 1: Inbound Physical Check (Teknisi A &amp; End User)</button>
-          <button class="tab-btn" data-qctab="panelOutboundQC">🔍 Tahap 2: Outbound QC Check (Teknisi B - QC)</button>
-          <button class="tab-btn" data-qctab="panelHistoryQC">📄 Arsip &amp; Unduh PDF QC (Syarat RRR)</button>
+          <button class="tab-btn active" data-qctab="panelInboundQC">IQC </button>
+          <button class="tab-btn" data-qctab="panelOutboundQC">OQC</button>
+          <button class="tab-btn" data-qctab="panelHistoryQC">Open Form Report</button>
         </div>
 
         <!-- SUB-PANEL 1: INBOUND PHYSICAL CHECK -->
@@ -289,9 +282,9 @@
           <div class="card" style="border-top: 4px solid #C53030;">
             <div class="card-header">
               <div>
-                <span class="badge badge-unicom">SOP Unicom / Xiaomi</span>
-                <h2 class="card-title" style="margin-top: 6px;">Tahap 1: Inbound Physical Check (Pengecekan Fisik Awal)</h2>
-                <p class="hint-text">Dilakukan oleh Teknisi A sebelum perbaikan/pembongkaran unit. Tandai lokasi cacat awal pada sketsa.</p>
+                <span class="badge badge-unicom">Pysical Check QC</span>
+                <h2 class="card-title" style="margin-top: 6px;">IQC</h2>
+                <p class="hint-text">Dilakukan oleh Customer Service saat penerimaan awal. Tandai lokasi cacat awal pada sketsa.</p>
               </div>
             </div>
 
@@ -314,7 +307,7 @@
                 <input type="text" id="qcNamaCustomer" class="form-control" placeholder="Contoh: Bapak Hendra" required>
               </div>
               <div class="form-group">
-                <label>Teknisi A (Engineers Repair)</label>
+                <label>Customer Service</label>
                 <input type="text" id="qcTeknisiA" class="form-control" readonly style="background: var(--bg-surface-hover);">
               </div>
             </div>
@@ -322,16 +315,16 @@
             <!-- Inbound Physical Sketch Canvas -->
             <div class="card" style="margin-top: 10px; background: var(--bg-app); border-color: rgba(197, 48, 48, 0.2);">
               <h3 class="card-title" style="font-size: 14px; color: #C53030;">
-                ✏️ Sketsa Pemeriksaan Fisik Inbound (Tandai Panah ke Arah Cacat Awal)
+                Sketsa Pemeriksaan Fisik IQC (Tandai sesuai dengan kondisi)
               </h3>
               <p class="hint-text" style="margin-bottom: 8px;">
-                Sesuai SOP: <em>"Gunakan panah pada sketsa perangkat di form yang menunjuk ke lokasi cacat (Gompal, Layar ada scratch, Sedikit scratch)."</em>
+                Sesuai kondisi: <em>"Gunakan panah pada sketsa perangkat di form yang menunjuk ke lokasi cacat (Gompal, Layar ada scratch, Sedikit scratch)."</em>
               </p>
 
               <div class="sketch-container">
                 <div class="sketch-toolbar">
-                  <button type="button" class="tool-btn active" data-tool="arrow" onclick="SketchCanvas.setTool('arrow')">➡️ Panah Penunjuk</button>
-                  <button type="button" class="tool-btn" data-tool="text" onclick="SketchCanvas.setTool('text')">💬 Tulis Keterangan</button>
+                  <button type="button" class="tool-btn active" data-tool="arrow" onclick="SketchCanvas.setTool('arrow')">Panah Penunjuk</button>
+                  <button type="button" class="tool-btn" data-tool="text" onclick="SketchCanvas.setTool('text')">💬 Komen</button>
                   <button type="button" class="tool-btn" onclick="SketchCanvas.addQuickText('Gompal')">+ 'Gompal'</button>
                   <button type="button" class="tool-btn" onclick="SketchCanvas.addQuickText('Layar ada scratch')">+ 'Layar ada scratch'</button>
                   <button type="button" class="tool-btn" onclick="SketchCanvas.addQuickText('Sedikit scratch')">+ 'Sedikit scratch'</button>
@@ -346,26 +339,26 @@
 
             <!-- Catatan Cacat Awal Tambahan -->
             <div class="form-group" style="margin-top: 16px;">
-              <label>Ringkasan Keterangan Cacat Awal Fisik Unit:</label>
+              <label>Remark IQC:</label>
               <textarea id="qcCatatanAwal" class="form-control" placeholder="Contoh: Gompal di sudut kiri atas, Layar ada scratch tipis..."></textarea>
             </div>
 
             <!-- Dual Signature: Teknisi A & End User (Customer) -->
             <div class="form-group">
               <label style="font-weight: bold; color: #C53030;">
-                ✍️ Tanda Tangan Pengesahan Tahap 1 (Inbound Physical Check):
+                ✍️ Tanda Tangan pengecekan IQC fisik:
               </label>
-              <p class="hint-text">Sesuai SOP, kondisi fisik awal unit wajib disetujui bersama oleh Teknisi A dan Konsumen (End User).</p>
+              <p class="hint-text">Sesuai SOP, pengecekan kondisi fisik awal unit wajib disetujui bersama oleh Customer Service dan Konsumen (End User).</p>
 
               <div class="signature-grid">
                 <!-- Kotak TTD 1: Teknisi A -->
                 <div class="signature-pad-box">
                   <div style="font-weight: bold; font-size: 12px; margin-bottom: 4px; color: var(--text-primary);">
-                    1. Engineers Repair (Teknisi A) <span class="required">*</span>
+                    1. Customer Service <span class="required">*</span>
                   </div>
                   <canvas id="signCanvasA" class="signature-canvas" width="380" height="120"></canvas>
                   <div class="sign-tools">
-                    <span class="hint-text">TTD Teknisi Repair</span>
+                    <span class="hint-text">TTD Teknisi CS</span>
                     <button type="button" class="btn btn-sm btn-secondary" onclick="App.clearSignA()">Hapus</button>
                   </div>
                 </div>
@@ -387,7 +380,7 @@
             <!-- Submit Button -->
             <div style="text-align: right; margin-top: 16px;">
               <button type="button" class="btn btn-primary" style="background:#C53030;" onclick="App.submitInboundQC()">
-                💾 Simpan Inbound QC (Lanjut ke Tahap Perbaikan)
+                Save
               </button>
             </div>
           </div>
@@ -398,10 +391,10 @@
           <div class="card" style="border-top: 4px solid #059669;">
             <div class="card-header">
               <div>
-                <span class="badge badge-unicom">SOP Verifikasi Silang (Cross-Verification)</span>
-                <h2 class="card-title" style="margin-top: 6px;">Antrean Unit Selesai Servis Menunggu Outbound QC</h2>
+                <span class="badge badge-unicom">Pysical Check QC</span>
+                <h2 class="card-title" style="margin-top: 6px;">OQC</h2>
                 <p class="hint-text">
-                  ⚠️ <strong>Ketentuan SOP:</strong> Teknisi B (Engineers QC) <strong>harus berbeda</strong> dari Teknisi A (Engineers Repair) untuk memastikan objektivitas kontrol kualitas.
+                  ⚠️ <strong>Ketentuan SOP:</strong> Teknisi B (Engineers QC) <strong>harus berbeda</strong> dari Teknisi A (Engineers Repair) untuk memastikan objektivitas QC kualitas.
                 </p>
               </div>
               <button class="btn btn-secondary btn-sm" onclick="App.loadPendingOutboundQC()">🔄 Refresh</button>
@@ -411,13 +404,13 @@
               <table class="enterprise-table">
                 <thead>
                   <tr>
-                    <th>QC ID</th>
-                    <th>Waktu Inbound</th>
+                    <th>Tiket QC </th>
+                    <th>Waktu Submit Form</th>
                     <th>ASID</th>
                     <th>Model Perangkat</th>
                     <th>IMEI / SN</th>
-                    <th>Teknisi A (Repair)</th>
-                    <th>Aksi Verifikasi</th>
+                    <th>Customer Service</th>
+                    <th>Tahap Verifikasi</th>
                   </tr>
                 </thead>
                 <tbody id="outboundPendingTableBody"></tbody>
@@ -431,8 +424,8 @@
           <div class="card">
             <div class="card-header">
               <div>
-                <h2 class="card-title">Arsip Form Physical Check (Syarat Wajib Approve RRR)</h2>
-                <p class="hint-text">Dokumen fisik sah yang telah lolos QC dan ditandatangani oleh kedua teknisi.</p>
+                <h2 class="card-title">Open Form Report </h2>
+                <p class="hint-text">Formulir Pysical Check valid setelah lolos QC dan ditandatangani oleh kedua teknisi.</p>
               </div>
               <button class="btn btn-secondary btn-sm" onclick="App.loadAllQCLogs()">🔄 Refresh</button>
             </div>
@@ -441,10 +434,10 @@
               <table class="enterprise-table">
                 <thead>
                   <tr>
-                    <th>QC ID</th>
+                    <th>Tiker QC</th>
                     <th>ASID</th>
                     <th>Model &amp; IMEI</th>
-                    <th>Teknisi A (Repair)</th>
+                    <th>Customer Service</th>
                     <th>Teknisi B (QC)</th>
                     <th>Tanggal QC</th>
                     <th>Status</th>
@@ -462,16 +455,16 @@
       <section id="view-tech-approval" class="view-section view-container" style="display: none;">
         <div class="view-header">
           <div>
-            <h1>Technical Support Approval Form</h1>
-            <p>Pengajuan klaim sparepart cacat pabrik, motherboard, dan eskalasi abnormal unit Xiaomi.</p>
+            <h1>Approval Form TS</h1>
+            <p>Approval Form untuk eskalasi.</p>
           </div>
         </div>
 
         <!-- TECHNICIAN PORTAL -->
         <div id="teknisiView" style="display: none;">
           <div class="tab-group">
-            <button class="tab-btn active" data-tab="panelFormBaru">📝 Buat Pengajuan Technical Approval</button>
-            <button class="tab-btn" data-tab="panelRiwayatTeknisi">📋 Riwayat Pengajuan Saya</button>
+            <button class="tab-btn active" data-tab="panelFormBaru">Submit Form Approval</button>
+            <button class="tab-btn" data-tab="panelRiwayatTeknisi">Riwayat Pengajuan Approval</button>
           </div>
 
           <!-- Panel 1: Buat Pengajuan Baru -->
@@ -483,18 +476,17 @@
                   <p class="hint-text">Lengkapi detail identitas unit dan pilih template analisa yang sesuai.</p>
                 </div>
                 <div style="font-size: 11px; color: var(--text-muted);" id="draftSaveIndicator">
-                  💾 Auto-save aktif
                 </div>
               </div>
 
               <!-- Metadata Perangkat -->
               <div class="form-grid">
                 <div class="form-group">
-                  <label>Nomor Service Request (SR Xiaomi) <span class="required">*</span></label>
+                  <label>Nomor ASID (SR Xiaomi) <span class="required">*</span></label>
                   <input type="text" id="formSrNumber" class="form-control" placeholder="Contoh: SR-XMI-202609-088" required>
                 </div>
                 <div class="form-group">
-                  <label>Nomor IMEI Unit (15 Digit) <span class="required">*</span></label>
+                  <label>Nomor IMEI/SN <span class="required">*</span></label>
                   <input type="text" id="formImei" class="form-control" placeholder="Contoh: 867492051234567" maxlength="16" required>
                 </div>
                 <div class="form-group">
@@ -502,7 +494,7 @@
                   <input type="text" id="formModel" class="form-control" placeholder="Contoh: Redmi Note 13 Pro 5G" required>
                 </div>
                 <div class="form-group">
-                  <label>Teknisi Pemohon</label>
+                  <label>Teknisi Submit Approval</label>
                   <input type="text" id="formTeknisiName" class="form-control" readonly style="background: var(--bg-surface-hover);">
                 </div>
               </div>
@@ -511,11 +503,11 @@
               <div class="form-group">
                 <label>Jenis Form Approval <span class="required">*</span></label>
                 <select id="formJenisApproval" class="form-control" style="font-weight: 700; color: var(--primary);">
-                  <option value="DOA Part">1. DOA Part (Sparepart Baru Cacat / Rusak)</option>
-                  <option value="DOA Part Mainboard">2. DOA Part Mainboard (Tukar Motherboard &amp; IMEI)</option>
-                  <option value="PPI">3. PPI (Product Problem Inspection / Tukar Unit)</option>
-                  <option value="Case/Problem">4. Case/Problem (Eskalasi Kasus Abnormal / Overheat)</option>
-                  <option value="Case Battery Kembung">5. Case Battery Kembung (Hazmat Safe Handling)</option>
+                  <option value="DOA Part">1. DOA Part (Good Stock)</option>
+                  <option value="DOA Part Mainboard">2. DOA Part Mainboard </option>
+                  <option value="PPI">3. PPI (Dualcell battery,dll)</option>
+                  <option value="Case/Problem">4. Case/Problem (Eskalasi Kasus Abnormal)</option>
+                  <option value="Case Battery Kembung">5. Case Battery Kembung (battery swelling)</option>
                 </select>
               </div>
 
@@ -537,7 +529,7 @@
               <!-- Tombol Kirim -->
               <div style="margin-top: 24px; text-align: right; display: flex; justify-content: flex-end; gap: 10px;">
                 <button type="button" class="btn btn-secondary" onclick="App.resetTeknisiForm()">Reset Form</button>
-                <button type="button" class="btn btn-primary" onclick="App.submitNewRequest()">🚀 Kirim Pengajuan ke Tim TS</button>
+                <button type="button" class="btn btn-primary" onclick="App.submitNewRequest()">Submit Form ke Tim TS</button>
               </div>
             </div>
           </div>
@@ -546,7 +538,7 @@
           <div id="panelRiwayatTeknisi" class="tab-panel" style="display: none;">
             <div class="card">
               <div class="card-header">
-                <h2 class="card-title">Daftar Pengajuan Technical Approval Saya</h2>
+                <h2 class="card-title">Daftar Pengajuan Form Approval</h2>
                 <button class="btn btn-secondary btn-sm" onclick="App.loadTeknisiHistory()">🔄 Refresh</button>
               </div>
               <div class="table-responsive">
@@ -602,7 +594,7 @@
         </div>
       </section>
 
-      <!-- VIEW 4: ALL REQUESTS (DATA TABLE) -->
+      <!-- VIEW 4: ALL REQUESTS (DATA TABLE) 
       <section id="view-all-requests" class="view-section view-container" style="display: none;">
         <div class="view-header">
           <div>
@@ -613,9 +605,9 @@
         </div>
 
         <div id="requestListTableContainer"></div>
-      </section>
+      </section> -->
 
-      <!-- VIEW 5: REPORTS & ANALYTICS -->
+      <!-- VIEW 5: REPORTS & ANALYTICS 
       <section id="view-reports" class="view-section view-container" style="display: none;">
         <div class="view-header">
           <div>
@@ -626,7 +618,7 @@
         </div>
 
         <div id="reportsContainer"></div>
-      </section>
+      </section> -->
 
       <!-- VIEW 6: ADMIN MANAGEMENT -->
       <section id="view-admin" class="view-section view-container" style="display: none;">
@@ -668,7 +660,7 @@
       <div class="search-results-list" id="globalSearchResults"></div>
       <div class="search-modal-footer">
         <span>Tekan <strong>Esc</strong> untuk menutup</span>
-        <span>Sistem Approval Xiaomi Enterprise</span>
+        <span>Sistem Approval Tower</span>
       </div>
     </div>
   </div>
@@ -680,7 +672,7 @@
     <div class="modal-content" style="max-width: 750px;">
       <div class="modal-header">
         <div>
-          <span class="badge badge-unicom">Tahap 2: Outbound QC Sesuai SOP</span>
+          <span class="badge badge-unicom">OQC</span>
           <h3 style="font-size: 16px; font-weight: 700; margin-top: 4px;">
             Verifikasi Fisik Akhir: <span id="outboundModalQcId" style="color: #C53030;">QC-000</span>
           </h3>
@@ -711,7 +703,7 @@
       <!-- Preview Sketsa Inbound dari Teknisi A -->
       <div style="background: var(--bg-app); border: 1px solid var(--border-default); border-radius: 8px; padding: 10px; margin-bottom: 16px;">
         <h4 style="font-size: 12px; font-weight: bold; color: var(--text-primary); margin-bottom: 6px;">
-          🔍 Sketsa Cacat Awal Inbound (Oleh Teknisi A):
+          🔍 Sketsa Cacat Awal Inbound (Customer Service):
         </h4>
         <div id="outboundModalSketchImg" style="text-align: center; max-height: 200px; overflow: hidden;"></div>
         <p id="outboundModalCatatanAwal" style="font-size: 11px; color: var(--text-muted); margin-top: 6px; font-style: italic;"></p>
@@ -752,7 +744,7 @@
 
       <!-- Tanda Tangan Digital Teknisi B -->
       <div class="form-group">
-        <label>Tanda Tangan Pengesahan (Engineers QC - Teknisi B) <span class="required">*</span>:</label>
+        <label>Tanda Tangan Pengesahan (Engineers OQC) <span class="required">*</span>:</label>
         <div class="signature-pad-box">
           <canvas id="signCanvasB" class="signature-canvas" width="380" height="120"></canvas>
           <div class="sign-tools">
@@ -766,7 +758,7 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="App.closeOutboundModal()">Batal</button>
         <button type="button" class="btn btn-success" onclick="App.submitOutboundQC()">
-          ✅ Selesaikan QC &amp; Generate Form Resmi (Syarat RRR)
+          ✅ Save QC &amp; Open Form Report)
         </button>
       </div>
     </div>
@@ -852,7 +844,6 @@
         <label>URL Web App Google Apps Script:</label>
         <input type="url" id="inputAppsScriptUrl" class="form-control" placeholder="https://script.google.com/macros/s/AKfy.../exec">
         <p class="hint-text">
-          *Kosongkan untuk menjalankan aplikasi dalam <strong>Mode Demo / Offline</strong> langsung di browser tanpa kendala jaringan.
         </p>
       </div>
 
