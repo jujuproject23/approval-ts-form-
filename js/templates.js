@@ -1,12 +1,20 @@
 /**
  * ==========================================================================
- * XIAOMI SERVICE CENTER APPROVAL SYSTEM - TEMPLATE BUILDER
- * File: js/templates.js
+ * ENTERPRISE FORM TEMPLATES & DRAFT ENGINE (5 Technical Templates)
+ * File: frontend/js/templates.js
  * ==========================================================================
- * Pengendali formulir dinamis untuk 5 jenis template approval.
  */
 
 const FormTemplates = {
+  /**
+   * Auto-generate enterprise standard request ID: TS-YYYY-XXXXXX
+   */
+  generateRequestId() {
+    const year = new Date().getFullYear();
+    const randomSeq = Math.floor(100000 + Math.random() * 900000);
+    return `TS-${year}-${randomSeq}`;
+  },
+
   // 1. Render Form Field sesuai Jenis Approval yang dipilih
   render(templateName, container) {
     if (!container) return;
@@ -15,8 +23,12 @@ const FormTemplates = {
     switch (templateName) {
       case "DOA Part":
         html = `
-          <div class="card" style="background: #FDFEFE; border-left: 4px solid var(--primary);">
-            <h4 style="margin-bottom: 12px; color: var(--primary);">Spesifikasi Form: DOA Part Baru</h4>
+          <div class="card" style="background: var(--bg-surface); border-left: 4px solid var(--primary); margin-top: 16px;">
+            <div class="card-header">
+              <h4 class="card-title" style="font-size: 14px; color: var(--primary);">
+                📦 Spesifikasi Form: DOA Part Baru (Dead on Arrival)
+              </h4>
+            </div>
             <div class="form-grid">
               <div class="form-group">
                 <label>Nomor Part (Part Number) <span class="required">*</span></label>
@@ -48,8 +60,12 @@ const FormTemplates = {
 
       case "DOA Part Mainboard":
         html = `
-          <div class="card" style="background: #FDFEFE; border-left: 4px solid var(--primary);">
-            <h4 style="margin-bottom: 12px; color: var(--primary);">Spesifikasi Form: Penggantian Motherboard (DOA Mainboard)</h4>
+          <div class="card" style="background: var(--bg-surface); border-left: 4px solid var(--primary); margin-top: 16px;">
+            <div class="card-header">
+              <h4 class="card-title" style="font-size: 14px; color: var(--primary);">
+                ⚡ Spesifikasi Form: Penggantian Motherboard (DOA Mainboard &amp; IMEI)
+              </h4>
+            </div>
             <div class="form-grid">
               <div class="form-group">
                 <label>IMEI Board Baru <span class="required">*</span></label>
@@ -82,8 +98,12 @@ const FormTemplates = {
 
       case "PPI":
         html = `
-          <div class="card" style="background: #FDFEFE; border-left: 4px solid var(--primary);">
-            <h4 style="margin-bottom: 12px; color: var(--primary);">Spesifikasi Form: Product Problem Inspection (Tukar Unit Baru)</h4>
+          <div class="card" style="background: var(--bg-surface); border-left: 4px solid var(--primary); margin-top: 16px;">
+            <div class="card-header">
+              <h4 class="card-title" style="font-size: 14px; color: var(--primary);">
+                🔄 Spesifikasi Form: Product Problem Inspection (Tukar Unit Baru)
+              </h4>
+            </div>
             <div class="form-grid">
               <div class="form-group">
                 <label>Tanggal Pembelian Konsumen <span class="required">*</span></label>
@@ -115,8 +135,12 @@ const FormTemplates = {
 
       case "Case/Problem":
         html = `
-          <div class="card" style="background: #FDFEFE; border-left: 4px solid var(--primary);">
-            <h4 style="margin-bottom: 12px; color: var(--primary);">Spesifikasi Form: Case / Problem Abnormal (Eskalasi)</h4>
+          <div class="card" style="background: var(--bg-surface); border-left: 4px solid var(--primary); margin-top: 16px;">
+            <div class="card-header">
+              <h4 class="card-title" style="font-size: 14px; color: var(--primary);">
+                ⚠️ Spesifikasi Form: Case / Problem Abnormal (Eskalasi Kasus Khusus)
+              </h4>
+            </div>
             <div class="form-grid">
               <div class="form-group">
                 <label>Versi OS / HyperOS Perangkat</label>
@@ -141,8 +165,12 @@ const FormTemplates = {
 
       case "Case Battery Kembung":
         html = `
-          <div class="card" style="background: #FDFEFE; border-left: 4px solid var(--primary);">
-            <h4 style="margin-bottom: 12px; color: var(--primary);">Spesifikasi Form: Case Baterai Kembung (Hazmat Safe)</h4>
+          <div class="card" style="background: var(--bg-surface); border-left: 4px solid var(--primary); margin-top: 16px;">
+            <div class="card-header">
+              <h4 class="card-title" style="font-size: 14px; color: var(--primary);">
+                🔋 Spesifikasi Form: Case Baterai Kembung (Hazmat Safe Handling)
+              </h4>
+            </div>
             <div class="form-grid">
               <div class="form-group">
                 <label>Ketebalan Baterai Aktual (mm) <span class="required">*</span></label>
@@ -180,6 +208,15 @@ const FormTemplates = {
     }
 
     container.innerHTML = html;
+
+    // Attach auto-save listener
+    container.querySelectorAll("input, select, textarea").forEach(input => {
+      input.addEventListener("input", () => {
+        if (window.App && App.triggerFormAutoSave) {
+          App.triggerFormAutoSave();
+        }
+      });
+    });
   },
 
   // 2. Ekstrak Nilai Inputan Menjadi Objek JSON Terstruktur

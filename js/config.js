@@ -1,40 +1,76 @@
 /**
  * ==========================================================================
- * XIAOMI SERVICE CENTER APPROVAL SYSTEM - CLIENT CONFIGURATION
- * File: js/config.js
+ * ENTERPRISE APPROVAL & QC SYSTEM - CONFIGURATION & MOCK DATA
+ * File: frontend/js/config.js
  * ==========================================================================
- * Konfigurasi API Endpoint Apps Script & Pengalih Mode Offline / Mock Data
  */
 
 const CONFIG = {
   // Masukkan URL Deployment Google Apps Script Web App Anda disini:
-  // Contoh: "https://script.google.com/macros/s/AKfycbx.../exec"
-  APPS_SCRIPT_URL:"https://script.google.com/macros/s/AKfycbxPYgb-xtHh6CO4UVoJvYj9ZXZOPqgYoxRZZl1ksxiE4UeWIQnzERilB6tItMHfR4Unow/exec" || "",
+  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbxPYgb-xtHh6CO4UVoJvYj9ZXZOPqgYoxRZZl1ksxiE4UeWIQnzERilB6tItMHfR4Unow/exec" || "",
 
-  // Jika APPS_SCRIPT_URL kosong, otomatis menggunakan MOCK_MODE agar
-  // antarmuka dan alur aplikasi bisa diuji langsung di browser tanpa backend!
+  // Jika APPS_SCRIPT_URL kosong atau tidak terjangkau, otomatis menggunakan mode DEMO/MOCK
   get USE_MOCK() {
     return !this.APPS_SCRIPT_URL || this.APPS_SCRIPT_URL.trim() === "";
   },
 
-  APP_TITLE: "Xiaomi Service Center Approval System",
-  VERSION: "2.0.0",
+  APP_TITLE: "Xiaomi Service Center - Enterprise Approval & QC",
+  VERSION: "3.0.0-Enterprise",
 
   STORAGE_KEYS: {
     AUTH_USER: "mi_auth_user",
     LOCAL_REQUESTS: "mi_local_requests",
-    AUDIT_LOGS: "mi_audit_logs"
+    LOCAL_QC_LOGS: "mi_local_qc_logs",
+    AUDIT_LOGS: "enterprise_audit_logs",
+    NOTIFICATIONS: "enterprise_notifications"
   },
 
-  // DATASET SIMULASI OFFLINE / DEMO CEPAT
+  // DATASET SIMULASI OFFLINE / DEMO CEPAT (Mendukung 6 Enterprise Roles)
   MOCK_DATA: {
     USERS: [
+      {
+        userId: "ADM-001",
+        namaLengkap: "System Administrator",
+        username: "admin",
+        password: "password123",
+        role: "Administrator",
+        department: "IT & Systems",
+        status: "Aktif"
+      },
+      {
+        userId: "SPV-001",
+        namaLengkap: "Dimas Anggara",
+        username: "dimas.spv",
+        password: "password123",
+        role: "Supervisor",
+        department: "Technical Service",
+        status: "Aktif"
+      },
+      {
+        userId: "MGR-001",
+        namaLengkap: "Hartono Kusuma",
+        username: "hartono.mgr",
+        password: "password123",
+        role: "Manager",
+        department: "Service Operations",
+        status: "Aktif"
+      },
       {
         userId: "TEK-001",
         namaLengkap: "Budi Santoso",
         username: "budi.teknisi",
         password: "password123",
         role: "Teknisi",
+        department: "Repair Engineering",
+        status: "Aktif"
+      },
+      {
+        userId: "TEK-002",
+        namaLengkap: "Siti Rahma",
+        username: "siti.teknisi",
+        password: "password123",
+        role: "Teknisi",
+        department: "QC & Inspection",
         status: "Aktif"
       },
       {
@@ -43,6 +79,7 @@ const CONFIG = {
         username: "agus.ts",
         password: "password123",
         role: "Tim_TS",
+        department: "Technical Support",
         status: "Aktif"
       },
       {
@@ -51,6 +88,16 @@ const CONFIG = {
         username: "rendra.ts",
         password: "password123",
         role: "Tim_TS",
+        department: "Technical Support",
+        status: "Aktif"
+      },
+      {
+        userId: "VIW-001",
+        namaLengkap: "Dewi Lestari",
+        username: "dewi.viewer",
+        password: "password123",
+        role: "Viewer",
+        department: "Audit & Compliance",
         status: "Aktif"
       }
     ],
@@ -64,6 +111,8 @@ const CONFIG = {
         modelType: "Xiaomi 14 Ultra",
         jenisApproval: "Case Battery Kembung",
         teknisiPemohon: "Budi Santoso (TEK-001)",
+        priority: "High",
+        department: "Repair Engineering",
         detailAnalisa: {
           template: "Case Battery Kembung",
           ketebalan_aktual_mm: "6.3",
@@ -74,7 +123,7 @@ const CONFIG = {
             lcd: "Normal, tidak ada pressure mark",
             lci: "White (Normal)"
           },
-          sketsa_fisik_drive_url: "https://via.placeholder.com/600x300.png?text=Sketsa+Fisik+IQC+Baterai+Kembung"
+          sketsa_fisik_drive_url: ""
         },
         statusApproval: "Pending",
         approverList: [],
@@ -89,6 +138,8 @@ const CONFIG = {
         modelType: "Redmi Note 13 Pro 5G",
         jenisApproval: "DOA Part",
         teknisiPemohon: "Siti Rahma (TEK-002)",
+        priority: "Normal",
+        department: "Repair Engineering",
         detailAnalisa: {
           template: "DOA Part",
           part_number: "508000012900",
@@ -102,12 +153,42 @@ const CONFIG = {
             approver_name: "Agus Salim",
             level: "TS Specialist",
             decision: "Approved",
-            notes: "Fisik pin FPC memang cacat produksi pabrik. Approve tukar part.",
+            notes: "Fisik pin FPC cacat produksi pabrik. Disetujui ganti part baru.",
             timestamp: "2026-09-17 13:00:00"
           }
         ],
         timestampApproved: "2026-09-17 13:00:00",
         pdfReportUrl: "https://drive.google.com/file/d/demo-doa-part-pdf/view"
+      },
+      {
+        requestId: "REQ-20260918-0003",
+        tanggalPengajuan: "2026-09-18 14:20:00",
+        srNumber: "SR-XMI-202609-078",
+        imei: "867492053334445",
+        modelType: "POCO F6 Pro",
+        jenisApproval: "DOA Part Mainboard",
+        teknisiPemohon: "Budi Santoso (TEK-001)",
+        priority: "Urgent",
+        department: "Repair Engineering",
+        detailAnalisa: {
+          template: "DOA Part Mainboard",
+          old_motherboard_sn: "MB-OLD-887711",
+          new_motherboard_sn: "MB-NEW-990022",
+          alasan_pergantian: "Dead on Arrival, no charging current, short VPH_PWR"
+        },
+        statusApproval: "Need Revision",
+        approverList: [
+          {
+            approver_id: "SPV-001",
+            approver_name: "Dimas Anggara",
+            level: "Supervisor",
+            decision: "Need Revision",
+            notes: "Mohon sertakan hasil uji resistansi pada jalur VPH_PWR sebelum approval motherboard.",
+            timestamp: "2026-09-18 15:45:00"
+          }
+        ],
+        timestampApproved: "",
+        pdfReportUrl: ""
       }
     ],
 

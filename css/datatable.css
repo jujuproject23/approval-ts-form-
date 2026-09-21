@@ -1,0 +1,227 @@
+/**
+ * ==========================================================================
+ * ENTERPRISE DATA TABLE (Sorting, Filtering, Pagination, Bulk Actions)
+ * File: frontend/css/datatable.css
+ * ==========================================================================
+ */
+
+.datatable-wrapper {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-enterprise);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Table Toolbar */
+.datatable-toolbar {
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+}
+
+.datatable-search-box {
+  position: relative;
+  min-width: 260px;
+}
+
+.datatable-search-box input {
+  width: 100%;
+  padding: 8px 12px 8px 34px;
+  font-size: 13px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.datatable-search-box input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+.datatable-search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.datatable-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.datatable-filter-select {
+  font-family: var(--font-family);
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  outline: none;
+  cursor: pointer;
+}
+
+/* Bulk Selection Banner */
+.datatable-bulk-banner {
+  background-color: var(--primary-light);
+  color: var(--primary);
+  padding: 8px 20px;
+  font-size: 12px;
+  font-weight: 600;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(37, 99, 235, 0.2);
+}
+
+.datatable-bulk-banner.active {
+  display: flex;
+}
+
+/* Responsive Table Container */
+.datatable-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.enterprise-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+  text-align: left;
+}
+
+.enterprise-table th {
+  background-color: var(--bg-app);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-default);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.enterprise-table th.sortable {
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.enterprise-table th.sortable:hover {
+  color: var(--primary);
+}
+
+.enterprise-table th .sort-indicator {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.enterprise-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  vertical-align: middle;
+  background-color: var(--bg-surface);
+  transition: background-color var(--transition-fast);
+}
+
+.enterprise-table tbody tr:hover td {
+  background-color: var(--bg-surface-hover);
+}
+
+.enterprise-table tbody tr.selected td {
+  background-color: var(--primary-light);
+}
+
+.enterprise-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Table Checkbox */
+.table-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+/* Table Row Action Buttons */
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Pagination Bar */
+.datatable-pagination {
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 12px;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pagination-btn {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background-color: var(--bg-surface-hover);
+  border-color: var(--border-strong);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination-btn.active {
+  background-color: var(--primary);
+  color: #FFFFFF;
+  border-color: var(--primary);
+}
+
+.page-size-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

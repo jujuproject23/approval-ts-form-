@@ -1,15 +1,15 @@
 /**
  * ==========================================================================
- * XIAOMI SERVICE CENTER APPROVAL & QC SYSTEM - MAIN APP LOGIC
- * File: js/app.js
+ * XIAOMI SERVICE CENTER APPROVAL & QC SYSTEM - ENTERPRISE ORCHESTRATOR
+ * File: frontend/js/app.js
  * ==========================================================================
- * Mengatur alur kerja:
- * 1. Modul QC Physical Check (SOP Xiaomi Inbound & Outbound)
- * 2. Modul Technical Approval (5 Jenis Approval Part/Problem)
+ * Mengorkestrasikan:
+ * 1. Modul SOP QC Physical Check (Inbound Dual-Sign & Outbound Cross-Verification)
+ * 2. Modul Technical Approval (5 Templates: DOA Part, Mainboard, PPI, Case, Battery)
+ * 3. 6 Role RBAC, Auto-Save Draft, Drag & Drop Upload, Multi-Level Approval Timeline
  */
 
 const App = {
-  activeModule: "qc", // 'qc' atau 'tech'
   activeRequestDetail: null,
   activeOutboundQcItem: null,
   uploadedEvidenceImages: [], // Array of { base64Data, mimeType, name }
@@ -18,8 +18,18 @@ const App = {
   signPadCustomer: null,
   signPadB: null,
 
+  autoSaveTimer: null,
+
   init() {
+    // Check saved GAS URL in localStorage
+    const savedUrl = localStorage.getItem("MI_APPS_SCRIPT_URL");
+    if (savedUrl !== null) {
+      CONFIG.APPS_SCRIPT_URL = savedUrl;
+    }
+
     this.setupGlobalEvents();
+    this.setupDragAndDrop();
+    NotificationService.init();
     this.checkSessionAndRoute();
   },
 
@@ -29,55 +39,32 @@ const App = {
   checkSessionAndRoute() {
     const user = Auth.getCurrentUser();
     const loginView = document.getElementById("loginView");
-    const appHeader = document.getElementById("appHeader");
-    const moduleNav = document.getElementById("moduleNav");
-    const qcModuleView = document.getElementById("qcModuleView");
-    const techModuleView = document.getElementById("techModuleView");
-
-    loginView.style.display = "none";
-    appHeader.style.display = "none";
-    moduleNav.style.display = "none";
-    qcModuleView.style.display = "none";
-    techModuleView.style.display = "none";
+    const appShell = document.getElementById("appShell");
 
     if (!user) {
-      loginView.style.display = "block";
+      if (loginView) loginView.style.display = "flex";
+      if (appShell) appShell.style.display = "none";
       this.updateModeBadge();
       return;
     }
 
-    // Tampilkan Header & Switcher Modul
-    appHeader.style.display = "block";
-    moduleNav.style.display = "flex";
-    document.getElementById("navUserName").textContent = user.namaLengkap;
-    document.getElementById("navUserRole").textContent = user.role;
+    // User is logged in
+    if (loginView) loginView.style.display = "none";
+    if (appShell) appShell.style.display = "flex";
 
-    // Aktifkan modul terpilih
-    this.switchMainModule(this.activeModule);
+    // Initialize UI Components
+    HeaderComponent.init();
+    SidebarComponent.init();
+
     this.updateModeBadge();
-  },
 
-  switchMainModule(moduleName) {
-    this.activeModule = moduleName;
-    const user = Auth.getCurrentUser();
-    const btnQC = document.getElementById("btnModuleQC");
-    const btnTech = document.getElementById("btnModuleTech");
-    const qcView = document.getElementById("qcModuleView");
-    const techView = document.getElementById("techModuleView");
+    // Default view navigation based on role
+    SidebarComponent.navigate("dashboard");
 
-    if (moduleName === "qc") {
-      btnQC.classList.add("active");
-      btnTech.classList.remove("active");
-      qcView.style.display = "block";
-      techView.style.display = "none";
-      this.initQCModule();
-    } else {
-      btnTech.classList.add("active");
-      btnQC.classList.remove("active");
-      qcView.style.display = "none";
-      techView.style.display = "block";
-      this.initTechModule(user);
-    }
+    // Initialize modules
+    this.initQCModule();
+    this.initTechModule(user);
+    this.restoreFormDraft();
   },
 
   updateModeBadge() {
@@ -85,13 +72,14 @@ const App = {
     const isMock = CONFIG.USE_MOCK;
     badges.forEach(b => {
       b.textContent = isMock ? "Mode: DEMO / OFFLINE" : "Mode: LIVE GOOGLE APPS SCRIPT";
-      b.style.background = isMock ? "#FEF3C7" : "#D1FAE5";
-      b.style.color = isMock ? "#92400E" : "#065F46";
+      b.style.backgroundColor = isMock ? "var(--warning-light)" : "var(--success-light)";
+      b.style.color = isMock ? "var(--warning-text)" : "var(--success-text)";
+      b.style.border = isMock ? "1px solid rgba(245, 158, 11, 0.3)" : "1px solid rgba(34, 197, 94, 0.3)";
     });
   },
 
   // ========================================================================
-  // 2. MODUL KHUSUS: QC PHYSICAL CHECK (SOP UNICOM XIAOMI)
+  // 2. MODUL KHUSUS: SOP QC PHYSICAL CHECK (UNICOM XIAOMI)
   // ========================================================================
   initQCModule() {
     const user = Auth.getCurrentUser();
@@ -112,7 +100,7 @@ const App = {
       if (!this.signPadCustomer) {
         this.signPadCustomer = new DigitalSignaturePad("signCanvasCustomer");
       }
-    }, 100);
+    }, 150);
 
     this.loadPendingOutboundQC();
     this.loadAllQCLogs();
@@ -121,24 +109,24 @@ const App = {
   // Submit Tahap 1: Inbound Physical Check (Teknisi A & End User)
   async submitInboundQC() {
     const user = Auth.getCurrentUser();
-    const asid = document.getElementById("qcAsid").value.trim();
-    const model = document.getElementById("qcModel").value.trim();
-    const imeiSn = document.getElementById("qcImeiSn").value.trim();
+    const asid = document.getElementById("qcAsid")?.value.trim();
+    const model = document.getElementById("qcModel")?.value.trim();
+    const imeiSn = document.getElementById("qcImeiSn")?.value.trim();
     const namaCustomer = document.getElementById("qcNamaCustomer") ? document.getElementById("qcNamaCustomer").value.trim() : "";
-    const catatanAwal = document.getElementById("qcCatatanAwal").value.trim();
+    const catatanAwal = document.getElementById("qcCatatanAwal")?.value.trim() || "";
 
     if (!asid || !model || !imeiSn || !namaCustomer) {
-      this.showToast("Lengkapi ASID, Model, IMEI/SN, dan Nama Customer!", "error");
+      NotificationService.showToast("Lengkapi ASID, Model, IMEI/SN, dan Nama Customer!", "error");
       return;
     }
 
     if (!this.signPadA || this.signPadA.isEmpty()) {
-      this.showToast("Wajib membubuhkan tanda tangan Teknisi A (Engineers Repair)!", "error");
+      NotificationService.showToast("Wajib membubuhkan tanda tangan Teknisi A (Engineers Repair)!", "error");
       return;
     }
 
     if (!this.signPadCustomer || this.signPadCustomer.isEmpty()) {
-      this.showToast("Wajib membubuhkan tanda tangan Konsumen / End User!", "error");
+      NotificationService.showToast("Wajib membubuhkan tanda tangan Konsumen / End User!", "error");
       return;
     }
 
@@ -188,16 +176,17 @@ const App = {
       allQC.unshift(newRecord);
       this.saveMockQCLogs(allQC);
 
-      this.showToast(`Inbound QC untuk ${asid} berhasil disimpan dengan tanda tangan Teknisi A dan End User!`, "success");
+      AuditService.log("SUBMIT_INBOUND_QC", newQcId, `Inbound QC ASID ${asid} untuk ${model}`);
+      NotificationService.showToast(`Inbound QC ${newQcId} berhasil disimpan!`, "success");
+      NotificationService.addNotification("Inbound QC Disimpan", `Unit ${model} (ASID: ${asid}) masuk ke antrean perbaikan.`, "info");
       this.resetInboundForm();
       this.loadPendingOutboundQC();
       this.loadAllQCLogs();
       return;
     }
 
-    // Kirim ke Live Apps Script API
     try {
-      this.showToast("Menyimpan Inbound QC & tanda tangan ke Drive...", "info");
+      NotificationService.showToast("Menyimpan data Inbound QC...", "info");
       const resp = await fetch(CONFIG.APPS_SCRIPT_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -205,15 +194,16 @@ const App = {
       });
       const res = await resp.json();
       if (res.success) {
-        this.showToast(`Berhasil! Nomor QC: ${res.qcId}. Siap lanjut ke perbaikan.`, "success");
+        AuditService.log("SUBMIT_INBOUND_QC", res.qcId, `Inbound QC ASID ${asid}`);
+        NotificationService.showToast(`Berhasil! Nomor QC: ${res.qcId}`, "success");
         this.resetInboundForm();
         this.loadPendingOutboundQC();
         this.loadAllQCLogs();
       } else {
-        this.showToast("Gagal menyimpan: " + res.message, "error");
+        NotificationService.showToast("Gagal simpan: " + res.message, "error");
       }
     } catch (err) {
-      this.showToast("Error koneksi: " + err.message, "error");
+      NotificationService.showToast("Error koneksi: " + err.message, "error");
     }
   },
 
@@ -224,8 +214,8 @@ const App = {
     if (document.getElementById("qcNamaCustomer")) document.getElementById("qcNamaCustomer").value = "";
     document.getElementById("qcCatatanAwal").value = "";
     SketchCanvas.clear();
-    if (this.signPadA) this.signPadA.clear();
-    if (this.signPadCustomer) this.signPadCustomer.clear();
+    this.clearSignA();
+    this.clearSignCustomer();
   },
 
   clearSignA() {
@@ -236,74 +226,84 @@ const App = {
     if (this.signPadCustomer) this.signPadCustomer.clear();
   },
 
-  // Ambil Antrean Outbound QC
+  // Load Antrean Tahap 2: Outbound QC Check
   async loadPendingOutboundQC() {
     const tbody = document.getElementById("outboundPendingTableBody");
     if (!tbody) return;
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Memuat antrean...</td></tr>`;
 
-    let list = [];
     if (CONFIG.USE_MOCK) {
-      list = this.getMockQCLogs().filter(q => q.statusQc === "Inbound_Completed");
-    } else {
-      try {
-        const resp = await fetch(CONFIG.APPS_SCRIPT_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ action: "get_pending_outbound_qc" })
-        });
-        const res = await resp.json();
-        list = res.data || [];
-      } catch (e) {
-        this.showToast("Gagal memuat antrean QC: " + e.message, "error");
-      }
-    }
-
-    if (!list || list.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#888;">Tidak ada antrean unit yang menunggu Outbound QC.</td></tr>`;
+      const allQC = this.getMockQCLogs();
+      const pending = allQC.filter(item => item.statusQc === "Inbound_Completed");
+      this.renderOutboundPendingTable(pending);
       return;
     }
 
-    let html = "";
-    list.forEach(item => {
-      html += `
+    try {
+      const resp = await fetch(CONFIG.APPS_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "get_pending_outbound_qc" })
+      });
+      const res = await resp.json();
+      if (res.success && res.data) {
+        this.renderOutboundPendingTable(res.data);
+      }
+    } catch (err) {
+      console.error("Gagal load pending outbound:", err);
+    }
+  },
+
+  renderOutboundPendingTable(list) {
+    const tbody = document.getElementById("outboundPendingTableBody");
+    if (!tbody) return;
+
+    if (!list || list.length === 0) {
+      tbody.innerHTML = `
         <tr>
-          <td><strong>${item.qcId}</strong></td>
-          <td><small style="color:#718096;">${item.tanggalInbound}</small></td>
-          <td><span style="font-weight:bold; color:#C53030;">${item.asid}</span></td>
-          <td>${item.model}</td>
-          <td><code>${item.imeiSn}</code></td>
-          <td>${item.teknisiA}</td>
-          <td>
-            <button type="button" class="btn btn-sm btn-primary" style="background:#059669;" onclick="App.openOutboundModal('${item.qcId}')">
-              🔬 Proses Outbound QC
-            </button>
+          <td colspan="7" style="text-align:center; color: var(--text-muted); padding: 24px;">
+            🎉 Tidak ada antrean unit yang menunggu Outbound QC saat ini.
           </td>
         </tr>
       `;
-    });
-    tbody.innerHTML = html;
-  },
-
-  // Modal Outbound QC (Teknisi B)
-  openOutboundModal(qcId) {
-    const user = Auth.getCurrentUser();
-    let item;
-    if (CONFIG.USE_MOCK) {
-      item = this.getMockQCLogs().find(q => q.qcId === qcId);
-    } else {
-      item = this.currentPendingQCList?.find(q => q.qcId === qcId);
-    }
-
-    if (!item) {
-      this.showToast("Data QC tidak ditemukan.", "error");
       return;
     }
 
-    // Peringatan SOP: Verifikasi Silang
-    const tekAName = item.teknisiA || "";
-    if (tekAName.toLowerCase().includes(user.userId.toLowerCase()) || tekAName.toLowerCase().includes(user.namaLengkap.toLowerCase())) {
-      this.showToast(`⚠️ Peringatan SOP: Anda tercatat sebagai Teknisi Repair (Teknisi A: ${tekAName}). Sesuai SOP, QC Outbound wajib dilakukan oleh teknisi yang BERBEDA (Teknisi B)!`, "error");
+    tbody.innerHTML = list.map(item => `
+      <tr>
+        <td style="font-weight: 700; color: #C53030;">${item.qcId}</td>
+        <td>${item.tanggalInbound}</td>
+        <td style="font-weight: 600;">${item.asid}</td>
+        <td>${item.model}</td>
+        <td style="font-family: var(--font-mono);">${item.imeiSn}</td>
+        <td><span class="badge badge-secondary">${item.teknisiA}</span></td>
+        <td>
+          <button class="btn btn-sm btn-success" onclick="App.openOutboundModal('${item.qcId}')">
+            🔍 Verifikasi QC
+          </button>
+        </td>
+      </tr>
+    `).join("");
+  },
+
+  // Buka Modal Tahap 2: Outbound QC Check (Teknisi B)
+  openOutboundModal(qcId) {
+    const user = Auth.getCurrentUser();
+    let item = null;
+
+    if (CONFIG.USE_MOCK) {
+      const allQC = this.getMockQCLogs();
+      item = allQC.find(q => q.qcId === qcId);
+    }
+
+    if (!item) {
+      NotificationService.showToast("Data QC tidak ditemukan!", "error");
+      return;
+    }
+
+    // ATURAN WAJIB SOP: TEKNISI B HARUS BERBEDA DENGAN TEKNISI A
+    if (item.teknisiA && item.teknisiA.includes(user.userId)) {
+      alert("⚠️ PELANGGARAN SOP:\nAnda tidak boleh melakukan QC pada unit yang Anda servis sendiri sebagai Teknisi A!\nSOP Xiaomi mewajibkan verifikasi silang (cross-verification) oleh 2 teknisi berbeda.");
+      return;
     }
 
     this.activeOutboundQcItem = item;
@@ -312,32 +312,25 @@ const App = {
     document.getElementById("outboundModalAsid").textContent = item.asid;
     document.getElementById("outboundModalModel").textContent = item.model;
     document.getElementById("outboundModalImei").textContent = item.imeiSn;
-    const custElem = document.getElementById("outboundModalCustomer");
-    if (custElem) custElem.textContent = item.namaCustomer || "Customer";
+    document.getElementById("outboundModalCustomer").textContent = item.namaCustomer || "-";
     document.getElementById("outboundModalTekA").textContent = item.teknisiA;
+    document.getElementById("outboundModalCatatanAwal").textContent = item.inboundData?.catatan_cacat_awal ? `Catatan Teknisi A: "${item.inboundData.catatan_cacat_awal}"` : "Tidak ada catatan cacat awal khusus.";
 
-    // Tampilkan sketsa Inbound
-    const imgBox = document.getElementById("outboundModalSketchImg");
-    const sketchUrl = item.inboundData?.sketsa_image_url || "";
-    if (sketchUrl) {
-      imgBox.innerHTML = `<img src="${sketchUrl}" style="max-width:100%; border:1px solid #ddd; border-radius:6px;" alt="Sketsa Inbound">`;
+    const imgContainer = document.getElementById("outboundModalSketchImg");
+    if (item.inboundData?.sketsa_image_url) {
+      imgContainer.innerHTML = `<img src="${item.inboundData.sketsa_image_url}" style="max-height: 180px; border-radius: 6px; border: 1px solid var(--border-default);">`;
     } else {
-      imgBox.innerHTML = `<div style="padding:20px; color:#888;">(Tidak ada lampiran gambar sketsa)</div>`;
+      imgContainer.innerHTML = `<span class="hint-text">Sketsa tidak tersedia atau dibuat tanpa coretan.</span>`;
     }
 
-    document.getElementById("outboundModalCatatanAwal").textContent = 
-      item.inboundData?.catatan_cacat_awal ? `Catatan Cacat Awal: "${item.inboundData.catatan_cacat_awal}"` : "";
-
-    // Reset Checklist
+    // Reset Checklist & Date
     document.getElementById("chkBackCover").checked = false;
     document.getElementById("chkKameraBelakang").checked = false;
     document.getElementById("chkKameraDepan").checked = false;
     document.getElementById("chkFisikHp").checked = false;
+    document.getElementById("outboundDateQc").value = new Date().toISOString().split("T")[0];
 
-    // Date QC default hari ini (YYYY-MM-DD)
-    document.getElementById("outboundDateQc").value = new Date().toISOString().slice(0, 10);
-
-    // Init Signature Pad B
+    // Inisialisasi Signature Pad B
     document.getElementById("outboundQcModal").classList.add("show");
     setTimeout(() => {
       if (!this.signPadB) {
@@ -349,7 +342,7 @@ const App = {
   },
 
   closeOutboundModal() {
-    document.getElementById("outboundQcModal").classList.remove("show");
+    document.getElementById("outboundQcModal")?.classList.remove("show");
     this.activeOutboundQcItem = null;
   },
 
@@ -357,76 +350,67 @@ const App = {
     if (this.signPadB) this.signPadB.clear();
   },
 
-  // Submit Tahap 2: Outbound QC Selesai
+  // Submit Tahap 2: Outbound QC Check
   async submitOutboundQC() {
+    const user = Auth.getCurrentUser();
     if (!this.activeOutboundQcItem) return;
 
-    const user = Auth.getCurrentUser();
-    const item = this.activeOutboundQcItem;
+    const chkBack = document.getElementById("chkBackCover").checked;
+    const chkKamBel = document.getElementById("chkKameraBelakang").checked;
+    const chkKamDep = document.getElementById("chkKameraDepan").checked;
+    const chkFisik = document.getElementById("chkFisikHp").checked;
+    const dateQc = document.getElementById("outboundDateQc").value;
 
-    // ATURAN KETAT SOP: Teknisi B != Teknisi A
-    const tekAName = item.teknisiA || "";
-    if (tekAName.toLowerCase().includes(user.userId.toLowerCase()) || tekAName.toLowerCase().includes(user.namaLengkap.toLowerCase())) {
-      alert(`PELANGGARAN SOP: Anda (${user.namaLengkap}) tidak boleh melakukan QC pada unit yang Anda servis sendiri sebagai Teknisi A! SOP Xiaomi mewajibkan verifikasi silang oleh 2 teknisi berbeda.`);
-      return;
-    }
-
-    // Validasi 4 Checklist Wajib Centang
-    const chk1 = document.getElementById("chkBackCover").checked;
-    const chk2 = document.getElementById("chkKameraBelakang").checked;
-    const chk3 = document.getElementById("chkKameraDepan").checked;
-    const chk4 = document.getElementById("chkFisikHp").checked;
-
-    if (!chk1 || !chk2 || !chk3 || !chk4) {
-      this.showToast("Seluruh 4 butir checklist fisik wajib memenuhi standar (dicentang)!", "error");
+    if (!chkBack || !chkKamBel || !chkKamDep || !chkFisik) {
+      NotificationService.showToast("Wajib mencentang seluruh 4 butir checklist fisik sesuai SOP!", "error");
       return;
     }
 
     if (!this.signPadB || this.signPadB.isEmpty()) {
-      this.showToast("Wajib membubuhkan tanda tangan Teknisi B (Engineers QC)!", "error");
+      NotificationService.showToast("Wajib membubuhkan tanda tangan Engineers QC (Teknisi B)!", "error");
       return;
     }
 
-    const dateQc = document.getElementById("outboundDateQc").value;
     const signBBase64 = this.signPadB.getBase64PNG();
 
     const payload = {
       action: "submit_outbound_qc",
-      qc_id: item.qcId,
+      qc_id: this.activeOutboundQcItem.qcId,
       teknisi_b: `${user.namaLengkap} (${user.userId})`,
-      checklist: {
-        back_cover_lem_rapat: chk1,
-        kamera_belakang_bersih: chk2,
-        kamera_depan_bersih: chk3,
-        fisik_hp_bersih: chk4
-      },
+      checklist_json: JSON.stringify({
+        back_cover_lem_rapat: chkBack,
+        kamera_belakang_bersih: chkKamBel,
+        kamera_depan_bersih: chkKamDep,
+        fisik_hp_bersih: chkFisik
+      }),
       date_qc: dateQc,
       sign_teknisi_b_base64: signBBase64
     };
 
     if (CONFIG.USE_MOCK) {
       const allQC = this.getMockQCLogs();
-      const target = allQC.find(q => q.qcId === item.qcId);
-      if (target) {
-        target.teknisiB = payload.teknisi_b;
-        target.outboundChecklist = payload.checklist;
-        target.dateQc = dateQc;
-        target.signTeknisiB = signBBase64;
-        target.statusQc = "QC_Passed";
-        target.pdfQcUrl = "https://drive.google.com/file/d/mock-sop-qc-passed-pdf/view";
+      const idx = allQC.findIndex(q => q.qcId === this.activeOutboundQcItem.qcId);
+      if (idx !== -1) {
+        allQC[idx].teknisiB = payload.teknisi_b;
+        allQC[idx].outboundChecklist = JSON.parse(payload.checklist_json);
+        allQC[idx].dateQc = dateQc;
+        allQC[idx].signTeknisiB = signBBase64;
+        allQC[idx].statusQc = "QC_Passed";
+        allQC[idx].pdfQcUrl = "https://drive.google.com/file/d/mock-qc-sop-pdf/view";
         this.saveMockQCLogs(allQC);
       }
 
-      this.showToast(`Outbound QC untuk ${item.asid} selesai! Formulir resmi siap digunakan untuk Approve RRR.`, "success");
+      AuditService.log("SUBMIT_OUTBOUND_QC", this.activeOutboundQcItem.qcId, `QC Lolos 4 Checklist oleh ${payload.teknisi_b}`);
+      NotificationService.showToast("QC Physical Check Selesai! Dokumen PDF resmi siap untuk RRR.", "success");
+      NotificationService.addNotification("QC Selesai (Passed)", `Unit ${this.activeOutboundQcItem.model} dinyatakan lolos QC fisik.`, "success");
       this.closeOutboundModal();
       this.loadPendingOutboundQC();
       this.loadAllQCLogs();
       return;
     }
 
-    // Kirim ke Live Apps Script API
     try {
-      this.showToast("Menyimpan hasil QC dan men-generate dokumen resmi...", "info");
+      NotificationService.showToast("Menyimpan hasil Outbound QC...", "info");
       const resp = await fetch(CONFIG.APPS_SCRIPT_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -434,369 +418,193 @@ const App = {
       });
       const res = await resp.json();
       if (res.success) {
-        this.showToast(res.message, "success");
+        AuditService.log("SUBMIT_OUTBOUND_QC", this.activeOutboundQcItem.qcId, "QC Passed");
+        NotificationService.showToast("QC Selesai! PDF resmi berhasil digenerate.", "success");
         this.closeOutboundModal();
         this.loadPendingOutboundQC();
         this.loadAllQCLogs();
       } else {
-        this.showToast("Gagal: " + res.message, "error");
+        NotificationService.showToast("Gagal: " + res.message, "error");
       }
     } catch (err) {
-      this.showToast("Error server: " + err.message, "error");
+      NotificationService.showToast("Error koneksi: " + err.message, "error");
     }
   },
 
-  // Riwayat Dokumen QC
+  // Load Arsip Seluruh Dokumen QC (Syarat RRR)
   async loadAllQCLogs() {
     const tbody = document.getElementById("historyQcTableBody");
     if (!tbody) return;
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;">Memuat riwayat arsip...</td></tr>`;
-
-    let list = [];
-    if (CONFIG.USE_MOCK) {
-      list = this.getMockQCLogs();
-    } else {
-      try {
-        const resp = await fetch(CONFIG.APPS_SCRIPT_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ action: "get_all_qc_logs" })
-        });
-        const res = await resp.json();
-        list = res.data || [];
-      } catch (e) {
-        this.showToast("Gagal memuat arsip: " + e.message, "error");
-      }
-    }
-
-    if (!list || list.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#888;">Belum ada dokumen QC tercatat.</td></tr>`;
-      return;
-    }
-
-    let html = "";
-    list.forEach(q => {
-      const isPassed = q.statusQc === "QC_Passed";
-      const badgeClass = isPassed ? "badge-approved" : "badge-pending";
-      const statusLabel = isPassed ? "QC PASSED (Lolos RRR)" : "Menunggu QC Outbound";
-
-      const pdfLink = q.pdfQcUrl ? 
-        `<a href="${q.pdfQcUrl}" target="_blank" class="btn btn-sm btn-success">📄 Formulir Resmi</a>` :
-        `<span style="font-size:11px; color:#999;">Belum Tersedia</span>`;
-
-      html += `
-        <tr>
-          <td><strong>${q.qcId}</strong></td>
-          <td><strong style="color:#C53030;">${q.asid}</strong><br><small style="color:#4A5568;">👤 ${q.namaCustomer || 'Customer'}</small></td>
-          <td>${q.model}<br><small style="color:#718096;">${q.imeiSn}</small></td>
-          <td>${q.teknisiA}</td>
-          <td>${q.teknisiB || "<span style='color:#C53030;'>- Belum QC -</span>"}</td>
-          <td>${q.dateQc || "-"}</td>
-          <td><span class="badge ${badgeClass}">${statusLabel}</span></td>
-          <td>${pdfLink}</td>
-        </tr>
-      `;
-    });
-    tbody.innerHTML = html;
-  },
-
-  // Mock Helpers QC
-  getMockQCLogs() {
-    const raw = localStorage.getItem("mi_local_qc_logs");
-    if (!raw) {
-      this.saveMockQCLogs(CONFIG.MOCK_DATA.INITIAL_QC_LOGS);
-      return CONFIG.MOCK_DATA.INITIAL_QC_LOGS;
-    }
-    return JSON.parse(raw);
-  },
-
-  saveMockQCLogs(arr) {
-    localStorage.setItem("mi_local_qc_logs", JSON.stringify(arr));
-  },
-
-  // ========================================================================
-  // 3. MODUL TECHNICAL APPROVAL (5 JENIS APPROVAL XIAOMI)
-  // ========================================================================
-  initTechModule(user) {
-    const teknisiView = document.getElementById("teknisiView");
-    const tsView = document.getElementById("tsView");
-
-    teknisiView.style.display = "none";
-    tsView.style.display = "none";
-
-    if (user.role === "Teknisi") {
-      teknisiView.style.display = "block";
-      this.initTeknisiPortal();
-    } else if (user.role === "Tim_TS") {
-      tsView.style.display = "block";
-      this.initTsPortal();
-    }
-  },
-
-  initTeknisiPortal() {
-    const user = Auth.getCurrentUser();
-    document.getElementById("formTeknisiName").value = `${user.namaLengkap} (${user.userId})`;
-
-    const selectJenis = document.getElementById("formJenisApproval");
-    selectJenis.addEventListener("change", (e) => {
-      FormTemplates.render(e.target.value, document.getElementById("dynamicTemplateContainer"));
-    });
-    FormTemplates.render(selectJenis.value, document.getElementById("dynamicTemplateContainer"));
-
-    this.loadTeknisiHistory();
-  },
-
-  async loadTeknisiHistory() {
-    const user = Auth.getCurrentUser();
-    const container = document.getElementById("teknisiHistoryTableBody");
-    container.innerHTML = `<tr><td colspan="6" style="text-align:center;">Memuat data...</td></tr>`;
-
-    let list = [];
-    if (CONFIG.USE_MOCK) {
-      list = this.getMockRequests().filter(r => 
-        r.teknisiPemohon.toLowerCase().includes(user.namaLengkap.toLowerCase()) ||
-        r.teknisiPemohon.toLowerCase().includes(user.userId.toLowerCase())
-      );
-    } else {
-      try {
-        const resp = await fetch(CONFIG.APPS_SCRIPT_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            action: "get_teknisi_requests",
-            teknisi_id: user.userId
-          })
-        });
-        const res = await resp.json();
-        list = res.data || [];
-      } catch (e) {
-        this.showToast("Gagal memuat riwayat pengajuan: " + e.message, "error");
-      }
-    }
-
-    if (!list || list.length === 0) {
-      container.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#888;">Belum ada riwayat pengajuan.</td></tr>`;
-      return;
-    }
-
-    let rowsHtml = "";
-    list.forEach(req => {
-      const badgeClass = req.statusApproval === "Approved" ? "badge-approved" :
-                         req.statusApproval === "Rejected" ? "badge-rejected" :
-                         req.statusApproval === "Partially_Approved" ? "badge-partial" : "badge-pending";
-
-      const pdfBtn = req.pdfReportUrl && req.pdfReportUrl !== "" ?
-        `<a href="${req.pdfReportUrl}" target="_blank" class="btn btn-sm btn-success">📄 Unduh PDF</a>` :
-        `<span style="color:#999; font-size:11px;">Belum Tersedia</span>`;
-
-      rowsHtml += `
-        <tr>
-          <td><strong>${req.requestId}</strong><br><small style="color:#718096;">${req.tanggalPengajuan}</small></td>
-          <td>${req.srNumber}</td>
-          <td>${req.modelType}<br><small style="color:#718096;">${req.imei}</small></td>
-          <td>${req.jenisApproval}</td>
-          <td><span class="badge ${badgeClass}">${req.statusApproval}</span></td>
-          <td>${pdfBtn}</td>
-        </tr>
-      `;
-    });
-    container.innerHTML = rowsHtml;
-  },
-
-  initTsPortal() {
-    this.loadPendingApprovals();
-  },
-
-  async loadPendingApprovals() {
-    const container = document.getElementById("tsPendingTableBody");
-    container.innerHTML = `<tr><td colspan="7" style="text-align:center;">Memuat antrean pending...</td></tr>`;
-
-    let list = [];
-    if (CONFIG.USE_MOCK) {
-      list = this.getMockRequests().filter(r => r.statusApproval === "Pending" || r.statusApproval === "Partially_Approved");
-    } else {
-      try {
-        const resp = await fetch(CONFIG.APPS_SCRIPT_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ action: "get_pending_approvals" })
-        });
-        const res = await resp.json();
-        list = res.data || [];
-      } catch (e) {
-        this.showToast("Gagal memuat antrean pending: " + e.message, "error");
-      }
-    }
-
-    document.getElementById("pendingCountBadge").textContent = `${list.length} Request`;
-
-    if (!list || list.length === 0) {
-      container.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#888;">Tidak ada antrean approval pending saat ini.</td></tr>`;
-      return;
-    }
-
-    let rows = "";
-    list.forEach(item => {
-      const badgeClass = item.statusApproval === "Partially_Approved" ? "badge-partial" : "badge-pending";
-      rows += `
-        <tr>
-          <td><strong>${item.requestId}</strong><br><small style="color:#718096;">${item.tanggalPengajuan}</small></td>
-          <td>${item.srNumber}</td>
-          <td>${item.modelType}<br><small style="color:#718096;">${item.imei}</small></td>
-          <td><span style="font-weight:600; color:var(--primary);">${item.jenisApproval}</span></td>
-          <td>${item.teknisiPemohon}</td>
-          <td><span class="badge ${badgeClass}">${item.statusApproval}</span></td>
-          <td>
-            <button class="btn btn-sm btn-primary" onclick="App.openReviewModal('${item.requestId}')">🔍 Tinjau &amp; Putuskan</button>
-          </td>
-        </tr>
-      `;
-    });
-    container.innerHTML = rows;
-  },
-
-  openReviewModal(requestId) {
-    let req;
-    if (CONFIG.USE_MOCK) {
-      req = this.getMockRequests().find(r => r.requestId === requestId);
-    } else {
-      req = this.currentPendingList?.find(r => r.requestId === requestId);
-    }
-
-    if (!req) {
-      this.showToast("Data pengajuan tidak ditemukan.", "error");
-      return;
-    }
-
-    this.activeRequestDetail = req;
-
-    document.getElementById("modalReqId").textContent = req.requestId;
-    document.getElementById("modalSrNumber").textContent = req.srNumber;
-    document.getElementById("modalImei").textContent = req.imei;
-    document.getElementById("modalModel").textContent = req.modelType;
-    document.getElementById("modalJenis").textContent = req.jenisApproval;
-    document.getElementById("modalTeknisi").textContent = req.teknisiPemohon;
-
-    const jsonContainer = document.getElementById("modalAnalisaContent");
-    jsonContainer.textContent = JSON.stringify(req.detailAnalisa, null, 2);
-
-    const imgContainer = document.getElementById("modalEvidencePreview");
-    imgContainer.innerHTML = "";
-    if (req.detailAnalisa?.evidence_drive_urls && req.detailAnalisa.evidence_drive_urls.length > 0) {
-      req.detailAnalisa.evidence_drive_urls.forEach((url, i) => {
-        imgContainer.innerHTML += `
-          <a href="${url}" target="_blank" class="btn btn-sm btn-secondary" style="margin-right:6px; margin-bottom:6px;">
-            Bukti Foto #${i + 1}
-          </a>
-        `;
-      });
-    }
-
-    document.getElementById("approvalModal").classList.add("show");
-  },
-
-  closeReviewModal() {
-    document.getElementById("approvalModal").classList.remove("show");
-    this.activeRequestDetail = null;
-  },
-
-  async executeApprovalDecision(decision) {
-    if (!this.activeRequestDetail) return;
-
-    const notes = document.getElementById("modalApproverNotes").value.trim();
-    if (decision === "Rejected" && !notes) {
-      this.showToast("Wajib mengisi alasan/catatan penolakan!", "error");
-      return;
-    }
-
-    const user = Auth.getCurrentUser();
-    const requestId = this.activeRequestDetail.requestId;
 
     if (CONFIG.USE_MOCK) {
-      const all = this.getMockRequests();
-      const target = all.find(r => r.requestId === requestId);
-      if (target) {
-        const timestamp = new Date().toLocaleString("id-ID");
-        target.approverList.push({
-          approver_id: user.userId,
-          approver_name: user.namaLengkap,
-          level: "Tim TS Specialist",
-          decision: decision,
-          notes: notes,
-          timestamp: timestamp
-        });
-
-        target.statusApproval = decision === "Approved" ? "Approved" : "Rejected";
-        if (decision === "Approved") {
-          target.timestampApproved = timestamp;
-          target.pdfReportUrl = "https://drive.google.com/file/d/mock-pdf-approved-download/view";
-        }
-        this.saveMockRequests(all);
-      }
-
-      this.showToast(`Request ${requestId} berhasil di-${decision}!`, "success");
-      this.closeReviewModal();
-      this.loadPendingApprovals();
+      const allQC = this.getMockQCLogs();
+      this.renderQCLogsTable(allQC);
       return;
     }
 
     try {
-      this.showToast("Memproses keputusan approval...", "info");
       const resp = await fetch(CONFIG.APPS_SCRIPT_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
-          action: "process_approval",
-          request_id: requestId,
-          approver_id: user.userId,
-          approver_name: user.namaLengkap,
-          approver_level: "Tim TS Specialist",
-          decision: decision,
-          notes: notes
-        })
+        body: JSON.stringify({ action: "get_all_qc_logs" })
       });
-
       const res = await resp.json();
-      if (res.success) {
-        this.showToast(res.message, "success");
-        this.closeReviewModal();
-        this.loadPendingApprovals();
-      } else {
-        this.showToast("Gagal memproses: " + res.message, "error");
+      if (res.success && res.data) {
+        this.renderQCLogsTable(res.data);
       }
     } catch (err) {
-      this.showToast("Error koneksi server: " + err.message, "error");
+      console.error("Gagal load history QC:", err);
     }
   },
 
+  renderQCLogsTable(list) {
+    const tbody = document.getElementById("historyQcTableBody");
+    if (!tbody) return;
+
+    if (!list || list.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" style="text-align:center; color: var(--text-muted); padding: 24px;">
+            Belum ada arsip dokumen QC tersimpan.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = list.map(item => `
+      <tr>
+        <td style="font-weight:700; color: #C53030;">${item.qcId}</td>
+        <td style="font-weight:600;">${item.asid}</td>
+        <td>${item.model} <br><small style="color:var(--text-muted); font-family: var(--font-mono);">${item.imeiSn}</small></td>
+        <td>${item.teknisiA ? item.teknisiA.split("(")[0].trim() : '-'}</td>
+        <td>${item.teknisiB ? item.teknisiB.split("(")[0].trim() : '<span class="badge badge-warning">Pending QC</span>'}</td>
+        <td>${item.dateQc || item.tanggalInbound || '-'}</td>
+        <td>
+          <span class="badge ${item.statusQc === 'QC_Passed' ? 'badge-success' : 'badge-warning'}">
+            ${item.statusQc === 'QC_Passed' ? '✅ QC Passed' : '⏳ Inbound Done'}
+          </span>
+        </td>
+        <td>
+          ${item.pdfQcUrl ? `
+            <a href="${item.pdfQcUrl}" target="_blank" class="btn btn-sm btn-secondary" title="Unduh Form Sah PDF">
+              📄 Unduh PDF
+            </a>
+          ` : `
+            <span class="hint-text">Menunggu QC</span>
+          `}
+        </td>
+      </tr>
+    `).join("");
+  },
+
+  // ========================================================================
+  // 3. MODUL TECHNICAL APPROVAL (5 TEMPLATES)
+  // ========================================================================
+  initTechModule(user) {
+    if (!user) return;
+
+    const fieldTek = document.getElementById("formTeknisiName");
+    if (fieldTek) {
+      fieldTek.value = `${user.namaLengkap} (${user.userId})`;
+    }
+
+    // Role-based view switching within Technical Module
+    const isTech = Auth.isRequester();
+    const isAppr = Auth.isApprover();
+
+    const tekView = document.getElementById("teknisiView");
+    const tsView = document.getElementById("tsView");
+
+    if (tekView) tekView.style.display = isTech ? "block" : "none";
+    if (tsView) tsView.style.display = isAppr ? "block" : "none";
+
+    // Initial dynamic template render
+    const selectJenis = document.getElementById("formJenisApproval");
+    const container = document.getElementById("dynamicTemplateContainer");
+    if (selectJenis && container) {
+      FormTemplates.render(selectJenis.value, container);
+    }
+
+    if (isTech) this.loadTeknisiHistory();
+    if (isAppr) this.loadPendingApprovals();
+  },
+
+  // Auto-save form draft
+  triggerFormAutoSave() {
+    clearTimeout(this.autoSaveTimer);
+    this.autoSaveTimer = setTimeout(() => {
+      const draftData = {
+        srNumber: document.getElementById("formSrNumber")?.value || "",
+        imei: document.getElementById("formImei")?.value || "",
+        model: document.getElementById("formModel")?.value || "",
+        jenis: document.getElementById("formJenisApproval")?.value || "DOA Part",
+        templateData: FormTemplates.extract(document.getElementById("formJenisApproval")?.value || "DOA Part")
+      };
+      StorageService.saveDraft("tech_form", draftData);
+      const ind = document.getElementById("draftSaveIndicator");
+      if (ind) {
+        const time = new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+        ind.textContent = `💾 Draft tersimpan (${time})`;
+      }
+    }, 800);
+  },
+
+  restoreFormDraft() {
+    const draft = StorageService.getDraft("tech_form");
+    if (draft && draft.data) {
+      const d = draft.data;
+      if (document.getElementById("formSrNumber")) document.getElementById("formSrNumber").value = d.srNumber || "";
+      if (document.getElementById("formImei")) document.getElementById("formImei").value = d.imei || "";
+      if (document.getElementById("formModel")) document.getElementById("formModel").value = d.model || "";
+      if (document.getElementById("formJenisApproval") && d.jenis) {
+        document.getElementById("formJenisApproval").value = d.jenis;
+        FormTemplates.render(d.jenis, document.getElementById("dynamicTemplateContainer"));
+      }
+    }
+  },
+
+  clearFormDraft() {
+    StorageService.clearDraft("tech_form");
+    const ind = document.getElementById("draftSaveIndicator");
+    if (ind) ind.textContent = "💾 Auto-save aktif";
+  },
+
+  // Submit New Technical Request
   async submitNewRequest() {
     const user = Auth.getCurrentUser();
-    const srNumber = document.getElementById("formSrNumber").value.trim();
-    const imei = document.getElementById("formImei").value.trim();
-    const model = document.getElementById("formModel").value.trim();
-    const jenis = document.getElementById("formJenisApproval").value;
+    const srNumber = document.getElementById("formSrNumber")?.value.trim();
+    const imei = document.getElementById("formImei")?.value.trim();
+    const model = document.getElementById("formModel")?.value.trim();
+    const jenis = document.getElementById("formJenisApproval")?.value;
 
-    if (!srNumber || !imei || !model) {
-      this.showToast("Mohon lengkapi No. SR, IMEI, dan Model Unit!", "error");
+    if (!srNumber || !imei || !model || !jenis) {
+      NotificationService.showToast("Lengkapi Nomor SR, IMEI, Model, dan Jenis Approval!", "error");
+      return;
+    }
+
+    if (imei.length < 14) {
+      NotificationService.showToast("Nomor IMEI harus 15 digit valid!", "error");
       return;
     }
 
     const detailData = FormTemplates.extract(jenis);
+    const newReqId = FormTemplates.generateRequestId();
 
     const payload = {
-      action: "submit_request",
+      action: "submit_approval",
+      request_id: newReqId,
       sr_number: srNumber,
       imei: imei,
       model_type: model,
       jenis_approval: jenis,
       teknisi_pemohon: `${user.namaLengkap} (${user.userId})`,
       detail_analisa: detailData,
-      images_base64: this.uploadedEvidenceImages
+      evidence_images: this.uploadedEvidenceImages
     };
 
     if (CONFIG.USE_MOCK) {
       const all = this.getMockRequests();
-      const newReqId = `REQ-${new Date().toISOString().slice(0,10).replace(/-/g,"")}-${("000" + (all.length + 1)).slice(-4)}`;
       const newReq = {
         requestId: newReqId,
         tanggalPengajuan: new Date().toLocaleString("id-ID"),
@@ -805,6 +613,8 @@ const App = {
         modelType: model,
         jenisApproval: jenis,
         teknisiPemohon: payload.teknisi_pemohon,
+        priority: "Normal",
+        department: "Repair Engineering",
         detailAnalisa: detailData,
         statusApproval: "Pending",
         approverList: [],
@@ -814,30 +624,34 @@ const App = {
       all.unshift(newReq);
       this.saveMockRequests(all);
 
-      this.showToast(`Pengajuan ${newReqId} berhasil dikirim ke antrean Tim TS!`, "success");
+      AuditService.log("CREATE_REQUEST", newReqId, `Pengajuan ${jenis} untuk ${model} (SR: ${srNumber})`);
+      NotificationService.showToast(`Pengajuan ${newReqId} berhasil dikirim ke antrean Tim TS!`, "success");
+      NotificationService.addNotification("Pengajuan Baru Dibuat", `Pengajuan ${newReqId} (${jenis}) berhasil dikirim.`, "info");
+      this.clearFormDraft();
       this.resetTeknisiForm();
       this.loadTeknisiHistory();
       return;
     }
 
     try {
-      this.showToast("Mengunggah data pengajuan...", "info");
+      NotificationService.showToast("Mengunggah data pengajuan...", "info");
       const resp = await fetch(CONFIG.APPS_SCRIPT_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(payload)
       });
-
       const res = await resp.json();
       if (res.success) {
-        this.showToast(`Berhasil! Nomor Request: ${res.requestId}`, "success");
+        AuditService.log("CREATE_REQUEST", res.requestId || newReqId, `Pengajuan ${jenis}`);
+        NotificationService.showToast(`Berhasil! Nomor Request: ${res.requestId || newReqId}`, "success");
+        this.clearFormDraft();
         this.resetTeknisiForm();
         this.loadTeknisiHistory();
       } else {
-        this.showToast("Gagal submit: " + res.message, "error");
+        NotificationService.showToast("Gagal submit: " + res.message, "error");
       }
     } catch (err) {
-      this.showToast("Error koneksi: " + err.message, "error");
+      NotificationService.showToast("Error koneksi: " + err.message, "error");
     }
   },
 
@@ -850,127 +664,259 @@ const App = {
     FormTemplates.render(document.getElementById("formJenisApproval").value, document.getElementById("dynamicTemplateContainer"));
   },
 
-  // ========================================================================
-  // 4. GLOBAL EVENTS & UTILITIES
-  // ========================================================================
-  setupGlobalEvents() {
-    const loginForm = document.getElementById("loginForm");
-    if (loginForm) {
-      loginForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const u = document.getElementById("loginUsername").value;
-        const p = document.getElementById("loginPassword").value;
-        const res = await Auth.login(u, p);
-        if (res.success) {
-          this.showToast("Selamat datang, " + res.data.namaLengkap, "success");
-          this.checkSessionAndRoute();
-        } else {
-          this.showToast(res.message, "error");
-        }
-      });
+  // Load Riwayat Pengajuan Teknisi
+  loadTeknisiHistory() {
+    const user = Auth.getCurrentUser();
+    const tbody = document.getElementById("teknisiHistoryTableBody");
+    if (!tbody || !user) return;
+
+    const all = this.getMockRequests();
+    const myRequests = all.filter(r => r.teknisiPemohon && r.teknisiPemohon.includes(user.userId));
+
+    if (!myRequests.length) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">
+            Belum ada riwayat pengajuan yang dibuat.
+          </td>
+        </tr>
+      `;
+      return;
     }
 
-    // Quick Login Demo Buttons
-    document.getElementById("quickLoginTeknisi")?.addEventListener("click", async () => {
-      document.getElementById("loginUsername").value = "budi.teknisi";
-      document.getElementById("loginPassword").value = "password123";
-      await Auth.login("budi.teknisi", "password123");
-      this.checkSessionAndRoute();
-    });
+    tbody.innerHTML = myRequests.map(r => `
+      <tr>
+        <td><strong style="color: var(--primary); cursor: pointer;" onclick="App.viewRequestDetail('${r.requestId}')">${r.requestId}</strong></td>
+        <td>${r.srNumber || '-'}</td>
+        <td>${r.modelType} <br><small style="color:var(--text-muted); font-family: var(--font-mono);">${r.imei}</small></td>
+        <td><span style="font-weight: 600;">${r.jenisApproval}</span></td>
+        <td><span class="badge badge-${r.statusApproval.toLowerCase().replace(/ /g, '-')}">${r.statusApproval}</span></td>
+        <td>
+          ${r.pdfReportUrl ? `
+            <a href="${r.pdfReportUrl}" target="_blank" class="btn btn-sm btn-secondary" title="Unduh Form Resmi PDF">
+              📄 Unduh PDF
+            </a>
+          ` : `
+            <span class="hint-text">Menunggu Approval</span>
+          `}
+        </td>
+      </tr>
+    `).join("");
+  },
 
-    document.getElementById("quickLoginTeknisiB")?.addEventListener("click", async () => {
-      document.getElementById("loginUsername").value = "siti.teknisi";
-      document.getElementById("loginPassword").value = "password123";
-      // Ensure siti is in mock users
-      if (!CONFIG.MOCK_DATA.USERS.find(u => u.username === "siti.teknisi")) {
-        CONFIG.MOCK_DATA.USERS.push({
-          userId: "TEK-002",
-          namaLengkap: "Siti Rahma",
-          username: "siti.teknisi",
-          password: "password123",
-          role: "Teknisi",
-          status: "Aktif"
-        });
+  // Load Antrean Pending untuk Tim TS / Approver
+  loadPendingApprovals() {
+    const tbody = document.getElementById("tsPendingTableBody");
+    const badge = document.getElementById("pendingCountBadge");
+    if (!tbody) return;
+
+    const all = this.getMockRequests();
+    const pending = all.filter(r => r.statusApproval === "Pending");
+
+    if (badge) badge.textContent = `${pending.length} Request`;
+
+    if (!pending.length) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">
+            🎉 Tidak ada pengajuan technical approval yang pending saat ini.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = pending.map(r => `
+      <tr>
+        <td style="font-weight: 700; color: var(--primary);">${r.requestId}</td>
+        <td>${r.srNumber || '-'}</td>
+        <td>${r.modelType} <br><small style="color:var(--text-muted); font-family: var(--font-mono);">${r.imei}</small></td>
+        <td><span style="font-weight: 600;">${r.jenisApproval}</span></td>
+        <td>${r.teknisiPemohon ? r.teknisiPemohon.split("(")[0].trim() : '-'}</td>
+        <td><span class="badge badge-warning">Pending</span></td>
+        <td>
+          <button class="btn btn-sm btn-primary" onclick="App.viewRequestDetail('${r.requestId}')">
+            🔍 Tinjau
+          </button>
+        </td>
+      </tr>
+    `).join("");
+  },
+
+  // View Request Detail Modal with Multi-Level Timeline
+  viewRequestDetail(requestId) {
+    const all = this.getMockRequests();
+    const item = all.find(r => r.requestId === requestId);
+    if (!item) {
+      NotificationService.showToast("Data pengajuan tidak ditemukan!", "error");
+      return;
+    }
+
+    this.activeRequestDetail = item;
+
+    document.getElementById("modalReqId").textContent = item.requestId;
+    document.getElementById("modalSrNumber").textContent = item.srNumber || "-";
+    document.getElementById("modalImei").textContent = item.imei || "-";
+    document.getElementById("modalModel").textContent = item.modelType || "-";
+    document.getElementById("modalJenis").textContent = item.jenisApproval || "-";
+    document.getElementById("modalTeknisi").textContent = item.teknisiPemohon || "-";
+    document.getElementById("modalAnalisaContent").textContent = JSON.stringify(item.detailAnalisa, null, 2);
+
+    // Multi-Level Approval Timeline
+    TimelineComponent.render("modalTimelineContainer", item);
+
+    // Render Evidence Previews
+    const previewBox = document.getElementById("modalEvidencePreview");
+    if (previewBox) {
+      previewBox.innerHTML = "";
+      if (item.detailAnalisa && item.detailAnalisa.sketsa_fisik_drive_url) {
+        previewBox.innerHTML += `
+          <h4 style="font-size: 13px; font-weight: 700; margin-bottom: 6px;">Lampiran Gambar:</h4>
+          <img src="${item.detailAnalisa.sketsa_fisik_drive_url}" style="max-height: 180px; border-radius: 6px; border: 1px solid var(--border-default);">
+        `;
       }
-      await Auth.login("siti.teknisi", "password123");
-      this.checkSessionAndRoute();
-    });
-
-    document.getElementById("quickLoginTs")?.addEventListener("click", async () => {
-      document.getElementById("loginUsername").value = "agus.ts";
-      document.getElementById("loginPassword").value = "password123";
-      await Auth.login("agus.ts", "password123");
-      this.checkSessionAndRoute();
-    });
-
-    // Logout
-    document.getElementById("btnLogout")?.addEventListener("click", () => Auth.logout());
-
-    // Switcher Tab QC Module (data-qctab)
-    document.querySelectorAll("[data-qctab]").forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        const targetTab = e.target.dataset.qctab;
-        document.querySelectorAll("[data-qctab]").forEach(b => b.classList.remove("active"));
-        e.target.classList.add("active");
-
-        document.querySelectorAll("#qcModuleView .tab-panel").forEach(p => p.style.display = "none");
-        const panel = document.getElementById(targetTab);
-        if (panel) panel.style.display = "block";
-
-        if (targetTab === "panelInboundQC") {
-          setTimeout(() => SketchCanvas.init("sketchCanvas"), 50);
-        }
-      });
-    });
-
-    // Switcher Tab Technical Module (data-tab)
-    document.querySelectorAll("[data-tab]").forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        const tab = e.target.dataset.tab;
-        document.querySelectorAll("[data-tab]").forEach(b => b.classList.remove("active"));
-        e.target.classList.add("active");
-
-        document.querySelectorAll("#techModuleView .tab-panel").forEach(p => p.style.display = "none");
-        const activePanel = document.getElementById(tab);
-        if (activePanel) activePanel.style.display = "block";
-      });
-    });
-
-    // Evidence Image Upload Handler
-    const imageInput = document.getElementById("evidenceImageInput");
-    if (imageInput) {
-      imageInput.addEventListener("change", (e) => {
-        const files = Array.from(e.target.files);
-        files.forEach(file => {
-          const reader = new FileReader();
-          reader.onload = (re) => {
-            this.uploadedEvidenceImages.push({
-              base64Data: re.target.result,
-              mimeType: file.type,
-              name: file.name
-            });
-            this.renderEvidencePreviews();
-          };
-          reader.readAsDataURL(file);
-        });
-      });
     }
 
-    // Config Endpoint Settings Modal
-    document.getElementById("btnOpenSettings")?.addEventListener("click", () => {
-      document.getElementById("inputAppsScriptUrl").value = CONFIG.APPS_SCRIPT_URL;
-      document.getElementById("settingsModal").classList.add("show");
+    // Role visibility for approver actions
+    const actionSection = document.getElementById("approverActionSection");
+    if (actionSection) {
+      actionSection.style.display = Auth.isApprover() ? "block" : "none";
+    }
+
+    document.getElementById("approvalModal").classList.add("show");
+  },
+
+  closeReviewModal() {
+    document.getElementById("approvalModal")?.classList.remove("show");
+    this.activeRequestDetail = null;
+  },
+
+  // Execute Multi-Level Approval Decision (Approved, Rejected, Need Revision)
+  async executeApprovalDecision(decision) {
+    const user = Auth.getCurrentUser();
+    if (!this.activeRequestDetail) return;
+
+    const notes = document.getElementById("modalApproverNotes")?.value.trim() || "";
+
+    const approverEntry = {
+      approver_id: user.userId,
+      approver_name: user.namaLengkap,
+      level: user.role,
+      decision: decision,
+      notes: notes || `Keputusan ${decision} oleh ${user.role}`,
+      timestamp: new Date().toLocaleString("id-ID")
+    };
+
+    if (CONFIG.USE_MOCK) {
+      const all = this.getMockRequests();
+      const idx = all.findIndex(r => r.requestId === this.activeRequestDetail.requestId);
+      if (idx !== -1) {
+        all[idx].statusApproval = decision;
+        if (!all[idx].approverList) all[idx].approverList = [];
+        all[idx].approverList.push(approverEntry);
+
+        if (decision === "Approved") {
+          all[idx].timestampApproved = approverEntry.timestamp;
+          all[idx].pdfReportUrl = "https://drive.google.com/file/d/demo-doa-part-pdf/view";
+        }
+
+        this.saveMockRequests(all);
+      }
+
+      AuditService.log(`${decision.toUpperCase().replace(/ /g, '_')}_REQUEST`, this.activeRequestDetail.requestId, `Catatan: ${notes || '-'}`);
+      NotificationService.showToast(`Pengajuan ${this.activeRequestDetail.requestId} berhasil di-${decision}!`, decision === "Approved" ? "success" : "warning");
+      NotificationService.addNotification(`Keputusan: ${decision}`, `Pengajuan ${this.activeRequestDetail.requestId} di-${decision} oleh ${user.namaLengkap}.`, decision === "Approved" ? "success" : "warning");
+      this.closeReviewModal();
+      this.loadPendingApprovals();
+      if (window.RequestListView) RequestListView.render();
+      if (window.DashboardView) DashboardView.render();
+      return;
+    }
+
+    try {
+      NotificationService.showToast("Menyimpan keputusan...", "info");
+      const resp = await fetch(CONFIG.APPS_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action: "approve_request",
+          request_id: this.activeRequestDetail.requestId,
+          decision: decision,
+          notes: notes,
+          approver_name: user.namaLengkap,
+          approver_id: user.userId
+        })
+      });
+      const res = await resp.json();
+      if (res.success) {
+        AuditService.log(`${decision.toUpperCase().replace(/ /g, '_')}_REQUEST`, this.activeRequestDetail.requestId, notes);
+        NotificationService.showToast("Keputusan berhasil disimpan!", "success");
+        this.closeReviewModal();
+        this.loadPendingApprovals();
+        if (window.RequestListView) RequestListView.render();
+      } else {
+        NotificationService.showToast("Gagal: " + res.message, "error");
+      }
+    } catch (err) {
+      NotificationService.showToast("Error koneksi: " + err.message, "error");
+    }
+  },
+
+  // ========================================================================
+  // 4. DRAG & DROP FILE UPLOADS
+  // ========================================================================
+  setupDragAndDrop() {
+    const dropzone = document.getElementById("evidenceDropzone");
+    const fileInput = document.getElementById("evidenceImageInput");
+
+    if (!dropzone || !fileInput) return;
+
+    dropzone.addEventListener("click", () => fileInput.click());
+
+    ["dragenter", "dragover"].forEach(eventName => {
+      dropzone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.add("dragover");
+      });
     });
-    document.getElementById("btnCloseSettings")?.addEventListener("click", () => {
-      document.getElementById("settingsModal").classList.remove("show");
+
+    ["dragleave", "drop"].forEach(eventName => {
+      dropzone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.remove("dragover");
+      });
     });
-    document.getElementById("btnSaveSettings")?.addEventListener("click", () => {
-      const url = document.getElementById("inputAppsScriptUrl").value.trim();
-      localStorage.setItem("MI_APPS_SCRIPT_URL", url);
-      CONFIG.APPS_SCRIPT_URL = url;
-      this.updateModeBadge();
-      document.getElementById("settingsModal").classList.remove("show");
-      this.showToast("Pengaturan URL Apps Script berhasil disimpan!", "success");
+
+    dropzone.addEventListener("drop", (e) => {
+      const dt = e.dataTransfer;
+      const files = Array.from(dt.files);
+      this.handleEvidenceFiles(files);
+    });
+
+    fileInput.addEventListener("change", (e) => {
+      const files = Array.from(e.target.files);
+      this.handleEvidenceFiles(files);
+    });
+  },
+
+  handleEvidenceFiles(files) {
+    files.forEach(file => {
+      if (!file.type.startsWith("image/")) {
+        NotificationService.showToast(`File ${file.name} bukan format gambar valid!`, "warning");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (re) => {
+        this.uploadedEvidenceImages.push({
+          base64Data: re.target.result,
+          mimeType: file.type,
+          name: file.name
+        });
+        this.renderEvidencePreviews();
+      };
+      reader.readAsDataURL(file);
     });
   },
 
@@ -993,29 +939,155 @@ const App = {
     this.renderEvidencePreviews();
   },
 
-  // Mock Storage Helpers Technical
+  // ========================================================================
+  // 5. GLOBAL EVENTS & DEMO LOGINS
+  // ========================================================================
+  setupGlobalEvents() {
+    // Login Form Submit
+    const loginForm = document.getElementById("loginForm");
+    loginForm?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const u = document.getElementById("loginUsername").value;
+      const p = document.getElementById("loginPassword").value;
+      const remember = document.getElementById("loginRememberMe")?.checked ?? true;
+
+      const res = await Auth.login(u, p, remember);
+      if (res.success) {
+        NotificationService.showToast("Selamat datang, " + res.data.namaLengkap, "success");
+        this.checkSessionAndRoute();
+      } else {
+        NotificationService.showToast(res.message, "error");
+      }
+    });
+
+    // Quick Login Demo Buttons (6 Enterprise Roles)
+    const quickLogins = [
+      { id: "quickLoginAdmin", user: "admin", pass: "password123" },
+      { id: "quickLoginSpv", user: "dimas.spv", pass: "password123" },
+      { id: "quickLoginMgr", user: "hartono.mgr", pass: "password123" },
+      { id: "quickLoginTeknisi", user: "budi.teknisi", pass: "password123" },
+      { id: "quickLoginTeknisiB", user: "siti.teknisi", pass: "password123" },
+      { id: "quickLoginTs", user: "agus.ts", pass: "password123" }
+    ];
+
+    quickLogins.forEach(q => {
+      document.getElementById(q.id)?.addEventListener("click", async () => {
+        document.getElementById("loginUsername").value = q.user;
+        document.getElementById("loginPassword").value = q.pass;
+        await Auth.login(q.user, q.pass, true);
+        this.checkSessionAndRoute();
+      });
+    });
+
+    // Logout
+    document.getElementById("btnLogout")?.addEventListener("click", () => Auth.logout());
+
+    // Switcher Tab QC Module (data-qctab)
+    document.querySelectorAll("[data-qctab]").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const targetTab = e.currentTarget.dataset.qctab;
+        document.querySelectorAll("[data-qctab]").forEach(b => b.classList.remove("active"));
+        e.currentTarget.classList.add("active");
+
+        document.querySelectorAll("#view-qc-module .tab-panel").forEach(p => p.style.display = "none");
+        const panel = document.getElementById(targetTab);
+        if (panel) panel.style.display = "block";
+
+        if (targetTab === "panelInboundQC") {
+          setTimeout(() => SketchCanvas.init("sketchCanvas"), 50);
+        }
+      });
+    });
+
+    // Switcher Tab Technical Module (data-tab)
+    document.querySelectorAll("[data-tab]").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const tab = e.currentTarget.dataset.tab;
+        document.querySelectorAll("[data-tab]").forEach(b => b.classList.remove("active"));
+        e.currentTarget.classList.add("active");
+
+        document.querySelectorAll("#view-tech-approval .tab-panel").forEach(p => p.style.display = "none");
+        const activePanel = document.getElementById(tab);
+        if (activePanel) activePanel.style.display = "block";
+      });
+    });
+
+    // Template Selector Change
+    document.getElementById("formJenisApproval")?.addEventListener("change", (e) => {
+      FormTemplates.render(e.target.value, document.getElementById("dynamicTemplateContainer"));
+      this.triggerFormAutoSave();
+    });
+
+    // Auto-save listeners on main technical inputs
+    ["formSrNumber", "formImei", "formModel"].forEach(id => {
+      document.getElementById(id)?.addEventListener("input", () => this.triggerFormAutoSave());
+    });
+
+    // Settings Modal
+    const openSettings = () => {
+      document.getElementById("inputAppsScriptUrl").value = CONFIG.APPS_SCRIPT_URL;
+      document.getElementById("settingsModal").classList.add("show");
+    };
+    document.getElementById("btnOpenSettings")?.addEventListener("click", openSettings);
+    document.getElementById("btnDropdownSettings")?.addEventListener("click", openSettings);
+    document.getElementById("btnCloseSettings")?.addEventListener("click", () => {
+      document.getElementById("settingsModal").classList.remove("show");
+    });
+    document.getElementById("btnSaveSettings")?.addEventListener("click", () => {
+      const url = document.getElementById("inputAppsScriptUrl").value.trim();
+      localStorage.setItem("MI_APPS_SCRIPT_URL", url);
+      CONFIG.APPS_SCRIPT_URL = url;
+      this.updateModeBadge();
+      document.getElementById("settingsModal").classList.remove("show");
+      NotificationService.showToast("URL Google Apps Script berhasil disimpan!", "success");
+    });
+  },
+
+  // ========================================================================
+  // 6. UNIFIED DATA GETTERS & CACHE HELPERS
+  // ========================================================================
+  getAllRequestsData() {
+    return this.getMockRequests();
+  },
+
+  getAllQcData() {
+    return this.getMockQCLogs();
+  },
+
   getMockRequests() {
-    const raw = localStorage.getItem(CONFIG.STORAGE_KEYS.LOCAL_REQUESTS);
-    if (!raw) {
-      this.saveMockRequests(CONFIG.MOCK_DATA.INITIAL_REQUESTS);
-      return CONFIG.MOCK_DATA.INITIAL_REQUESTS;
-    }
-    return JSON.parse(raw);
+    return StorageService.getItem(CONFIG.STORAGE_KEYS.LOCAL_REQUESTS, CONFIG.MOCK_DATA.INITIAL_REQUESTS);
   },
 
   saveMockRequests(arr) {
-    localStorage.setItem(CONFIG.STORAGE_KEYS.LOCAL_REQUESTS, JSON.stringify(arr));
+    StorageService.setItem(CONFIG.STORAGE_KEYS.LOCAL_REQUESTS, arr);
   },
 
-  showToast(msg, type = "info") {
-    const container = document.getElementById("toastContainer");
-    if (!container) return;
-    const toast = document.createElement("div");
-    toast.className = `toast ${type}`;
-    toast.textContent = msg;
-    container.appendChild(toast);
-    setTimeout(() => toast.remove(), 4000);
+  getMockQCLogs() {
+    return StorageService.getItem(CONFIG.STORAGE_KEYS.LOCAL_QC_LOGS, CONFIG.MOCK_DATA.INITIAL_QC_LOGS);
+  },
+
+  saveMockQCLogs(arr) {
+    StorageService.setItem(CONFIG.STORAGE_KEYS.LOCAL_QC_LOGS, arr);
+  },
+
+  async refreshAllData() {
+    if (!CONFIG.USE_MOCK && CONFIG.APPS_SCRIPT_URL) {
+      try {
+        const resp = await fetch(CONFIG.APPS_SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: "get_all_requests" })
+        });
+        const res = await resp.json();
+        if (res.success && res.data) {
+          this.saveMockRequests(res.data);
+        }
+      } catch (e) {
+        console.warn("Refresh live data failed:", e);
+      }
+    }
   }
 };
 
+// Start application when DOM is ready
 document.addEventListener("DOMContentLoaded", () => App.init());

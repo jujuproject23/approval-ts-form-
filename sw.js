@@ -5,18 +5,39 @@
  * ==========================================================================
  */
 
-const CACHE_NAME = "mi-approval-v2.1";
+const CACHE_NAME = "mi-approval-v3.0-enterprise";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
   "./manifest.json",
   "./css/styles.css",
+  "./css/design-tokens.css",
+  "./css/components.css",
+  "./css/layout.css",
+  "./css/datatable.css",
   "./js/config.js",
+  "./js/services/storage-service.js",
+  "./js/services/export-service.js",
+  "./js/services/audit-service.js",
+  "./js/services/notification-service.js",
+  "./js/core/theme.js",
   "./js/auth.js",
   "./js/signature-pad.js",
   "./js/canvas-sketch.js",
   "./js/templates.js",
-  "./js/app.js"
+  "./js/components/header.js",
+  "./js/components/sidebar.js",
+  "./js/components/datatable.js",
+  "./js/components/chart.js",
+  "./js/components/timeline.js",
+  "./js/pages/dashboard-view.js",
+  "./js/pages/request-list-view.js",
+  "./js/pages/reports-view.js",
+  "./js/pages/admin-view.js",
+  "./js/pages/profile-view.js",
+  "./js/app.js",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png"
 ];
 
 // Install Event: Cache App Shell
