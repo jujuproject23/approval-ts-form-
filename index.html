@@ -178,9 +178,9 @@
                 <div style="font-size: 11px; color: var(--text-muted);" id="dropdownUserRole">Role</div>
               </div>
               <a href="#" class="dropdown-item" onclick="SidebarComponent.navigate('profile')"> Profil &amp; Keamanan</a>
-              <a href="#" class="dropdown-item" id="btnDropdownSettings">⚙️ Pengaturan Endpoint</a>
+              <a href="#" class="dropdown-item" id="btnDropdownSettings"></a>
               <div class="dropdown-divider"></div>
-              <a href="#" class="dropdown-item danger" id="btnLogout">🚪 Keluar (Logout)</a>
+              <a href="#" class="dropdown-item danger" id="btnLogout">Keluar (Logout)</a>
             </div>
           </div>
         </div>
@@ -822,9 +822,9 @@
         <!-- Tombol Aksi Approval Multi-Status -->
         <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap;">
           <button type="button" class="btn btn-secondary" onclick="App.closeReviewModal()">Tutup</button>
-          <button type="button" class="btn btn-warning" onclick="App.executeApprovalDecision('Need Revision')">🔄 Perlu Revisi</button>
-          <button type="button" class="btn btn-danger" onclick="App.executeApprovalDecision('Rejected')">❌ Tolak (Reject)</button>
-          <button type="button" class="btn btn-success" onclick="App.executeApprovalDecision('Approved')">✅ Setujui (Approve)</button>
+          <button type="button" class="btn btn-warning" onclick="App.executeApprovalDecision('Need Revision')">Perlu Revisi</button>
+          <button type="button" class="btn btn-danger" onclick="App.executeApprovalDecision('Rejected')">Tolak (Reject)</button>
+          <button type="button" class="btn btn-success" onclick="App.executeApprovalDecision('Approved')">Setujui (Approve)</button>
         </div>
       </div>
     </div>
